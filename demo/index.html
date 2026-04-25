@@ -64,6 +64,30 @@
     .chart-range { border: 0; border-radius: 999px; padding: 0.55rem 1.05rem; color: #8f96aa; background: transparent; font-size: 0.95rem; font-weight: 800; }
     .chart-range.active { color: #18254f; background: #f5f6f8; }
     .chart-empty { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; text-align: center; }
+    .view-tabs { display: flex; gap: 0.35rem; margin: 0.85rem 0 0.25rem; padding: 0.25rem; border-radius: 999px; background: #f5f6f8; }
+    .view-tab { flex: 1; border: 0; border-radius: 999px; color: #8f96aa; background: transparent; font-weight: 800; }
+    .view-tab.active { color: #18254f; background: #fff; box-shadow: 0 8px 20px rgba(20, 31, 56, 0.08); }
+    .view[hidden] { display: none; }
+    .tx-search { display: flex; align-items: center; gap: 0.65rem; margin: 1.1rem 0 1.25rem; padding: 0.8rem 1rem; border-radius: 999px; background: linear-gradient(180deg, #eef7ff 0%, #fff 88%); box-shadow: 0 16px 36px rgba(35, 74, 130, 0.11); }
+    .tx-search-icon { color: #8f96aa; font-size: 1.1rem; }
+    .tx-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--fg); font: inherit; font-size: 1rem; }
+    .tx-search input::placeholder { color: #9aa1b4; }
+    .tx-day { margin: 1.35rem 0 0.65rem; color: #949bad; font-size: 0.86rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
+    .tx-list { display: grid; gap: 0.65rem; }
+    .tx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.2rem 0; }
+    .tx-main { min-width: 0; }
+    .tx-name { color: #18254f; font-size: 1rem; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-sub { margin-top: 0.18rem; color: #9aa1b4; font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-meta { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+    .tx-pill { max-width: 9.5rem; padding: 0.2rem 0.55rem; border-radius: 999px; color: #3d9d36; background: #eaf6e8; font-size: 0.72rem; font-weight: 850; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-pill.food { color: #8b35dd; background: #f2e7ff; }
+    .tx-pill.transfer { color: #61708a; background: #eef1f5; }
+    .tx-pill.shopping { color: #b56b0a; background: #fff0d9; }
+    .tx-pill.travel { color: #1d72b8; background: #e6f3ff; }
+    .tx-amount { color: #18254f; font-size: 1rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tx-amount.inflow { color: #3d9d36; }
+    .tx-dot { display: inline-block; width: 0.42rem; height: 0.42rem; margin-left: 0.4rem; border-radius: 50%; background: #77a8ed; vertical-align: middle; }
+    .tx-empty { margin: 2rem 0; color: var(--muted); text-align: center; }
     @media (max-width: 640px) {
       body {
         max-width: none;
@@ -85,6 +109,11 @@
       .chart-body { height: 150px; }
       .chart-ranges { justify-content: stretch; gap: 0.2rem; }
       .chart-range { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.5rem 0.1rem; font-size: 0.88rem; }
+      .view-tabs { margin-top: 0.75rem; }
+      .tx-search { margin: 1rem 0 1.15rem; padding: 0.8rem 0.9rem; }
+      .tx-row { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; padding: 0.45rem 0; }
+      .tx-meta { justify-content: space-between; }
+      .tx-pill { max-width: min(11rem, 55vw); }
       .category { margin: 0.7rem 0; }
       .category summary { padding: 0.8rem 0.85rem; grid-template-columns: minmax(0, 1fr) auto auto; }
       .category-body { padding: 0.15rem 0.65rem 0.65rem; }
@@ -153,9 +182,22 @@
     </details>
   </div>
   <p class="lead">Connect banks via Plaid, brokerages (incl. Fidelity) via SnapTrade. Balances grouped into Deposit, Investment, Debt.</p>
-  <section class="chart" id="chart"></section>
-  <div class="institutions" id="institutions">No accounts connected yet.</div>
-  <div id="out"></div>
+  <nav class="view-tabs" aria-label="Views">
+    <button class="view-tab active" id="overview-tab" type="button">Overview</button>
+    <button class="view-tab" id="transactions-tab" type="button">Transactions</button>
+  </nav>
+  <section class="view" id="overview-view">
+    <section class="chart" id="chart"></section>
+    <div class="institutions" id="institutions">No accounts connected yet.</div>
+    <div id="out"></div>
+  </section>
+  <section class="view" id="transactions-view" hidden>
+    <label class="tx-search">
+      <span class="tx-search-icon">⌕</span>
+      <input id="tx-search" type="search" placeholder="Search" autocomplete="off" />
+    </label>
+    <div id="tx-out"></div>
+  </section>
 
 <script>
 const out = document.getElementById("out");
@@ -163,10 +205,18 @@ const instEl = document.getElementById("institutions");
 const chartEl = document.getElementById("chart");
 const actionsMenu = document.getElementById("actions-menu");
 const removeModeBtn = document.getElementById("remove-mode");
+const overviewView = document.getElementById("overview-view");
+const transactionsView = document.getElementById("transactions-view");
+const overviewTab = document.getElementById("overview-tab");
+const transactionsTab = document.getElementById("transactions-tab");
+const txSearch = document.getElementById("tx-search");
+const txOut = document.getElementById("tx-out");
 let removeMode = false;
 let chartRange = "1M";
 let chartHistory = [];
 let openCategories = new Set();
+let currentView = "overview";
+let transactionsData = [];
 
 function fmt(n) {
   if (n == null || Number.isNaN(Number(n))) return "—";
@@ -195,6 +245,113 @@ function fmtDate(dateStr) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[char]));
+}
+
+function txDateLabel(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.getTime() === today.getTime()) return "Today";
+  if (d.getTime() === yesterday.getTime()) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function txCategoryClass(category) {
+  const c = String(category || "").toLowerCase();
+  if (c.includes("restaurant") || c.includes("food") || c.includes("grocery")) return "food";
+  if (c.includes("transfer") || c.includes("payment") || c.includes("loan")) return "transfer";
+  if (c.includes("shop") || c.includes("merchandise")) return "shopping";
+  if (c.includes("travel") || c.includes("transport")) return "travel";
+  return "";
+}
+
+function renderTransactions() {
+  const q = txSearch.value.trim().toLowerCase();
+  const filtered = transactionsData.filter((t) => {
+    if (!q) return true;
+    return [
+      t.name,
+      t.category,
+      t.institution,
+      t.account_name,
+      t.account_subtype,
+    ].some(value => String(value || "").toLowerCase().includes(q));
+  });
+
+  if (!filtered.length) {
+    txOut.innerHTML = `<div class="tx-empty">${transactionsData.length ? "No matching transactions." : "No transactions yet. Try Refresh from Manage."}</div>`;
+    return;
+  }
+
+  let html = "";
+  let currentDate = "";
+  for (const tx of filtered) {
+    if (tx.date !== currentDate) {
+      currentDate = tx.date;
+      html += `<div class="tx-day">${escapeHtml(txDateLabel(currentDate))}</div><div class="tx-list">`;
+    }
+    const isInflow = Number(tx.amount) < 0;
+    const amount = fmt(Math.abs(Number(tx.amount) || 0));
+    const pending = tx.pending ? `<span class="tx-dot" title="Pending"></span>` : "";
+    const account = [tx.institution, tx.account_name, tx.account_mask ? `••${tx.account_mask}` : ""]
+      .filter(Boolean)
+      .join(" · ");
+    html += `
+      <div class="tx-row">
+        <div class="tx-main">
+          <div class="tx-name">${escapeHtml(tx.name)}</div>
+          <div class="tx-sub">${escapeHtml(account)}</div>
+        </div>
+        <div class="tx-meta">
+          <span class="tx-pill ${txCategoryClass(tx.category)}">${escapeHtml(tx.category)}</span>
+          <span class="tx-amount ${isInflow ? "inflow" : ""}">${isInflow ? "+" : ""}${amount}${pending}</span>
+        </div>
+      </div>`;
+
+    const next = filtered[filtered.indexOf(tx) + 1];
+    if (!next || next.date !== currentDate) html += `</div>`;
+  }
+  txOut.innerHTML = html;
+}
+
+async function refreshTransactions(force = false) {
+  const path = force ? "/api/transactions?refresh=1" : "/api/transactions";
+  const payload = await fetch(path).then(r => r.json());
+  if (payload.error) {
+    txOut.innerHTML = `<pre class="err">${JSON.stringify(payload, null, 2)}</pre>`;
+    return;
+  }
+  transactionsData = payload.transactions || [];
+  renderTransactions();
+  if ((payload.errors || []).length) {
+    txOut.innerHTML += `<pre class="err">${JSON.stringify(payload.errors, null, 2)}</pre>`;
+  }
+}
+
+function showView(view) {
+  currentView = view;
+  const showTransactions = view === "transactions";
+  overviewView.hidden = showTransactions;
+  transactionsView.hidden = !showTransactions;
+  overviewTab.classList.toggle("active", !showTransactions);
+  transactionsTab.classList.toggle("active", showTransactions);
+  if (showTransactions && transactionsData.length === 0) refreshTransactions();
 }
 
 function renderNetWorthChart(history) {
@@ -487,7 +644,10 @@ async function hideAccount(accountKey) {
 async function resetAll() {
   if (!confirm("Unlink all accounts locally? (Plaid and SnapTrade connections remain on their side.)")) return;
   await fetch("/api/reset", { method: "POST" });
+  transactionsData = [];
+  txSearch.value = "";
   await refresh();
+  if (currentView === "transactions") await refreshTransactions();
 }
 
 out.addEventListener("click", (event) => {
@@ -514,13 +674,22 @@ document.addEventListener("click", (event) => {
 
 document.getElementById("add-plaid").onclick = addPlaid;
 document.getElementById("add-snaptrade").onclick = addSnapTrade;
-document.getElementById("refresh").onclick = () => refresh(true);
+document.getElementById("refresh").onclick = () => {
+  if (currentView === "transactions") {
+    refreshTransactions(true);
+  } else {
+    refresh(true);
+  }
+};
 removeModeBtn.onclick = () => {
   removeMode = !removeMode;
   removeModeBtn.textContent = removeMode ? "Done" : "Remove";
   refresh();
 };
 document.getElementById("reset").onclick = resetAll;
+overviewTab.onclick = () => showView("overview");
+transactionsTab.onclick = () => showView("transactions");
+txSearch.addEventListener("input", renderTransactions);
 
 refresh();
 </script>

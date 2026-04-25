@@ -3,5 +3,6 @@ snaptrade_user.json
 balances_cache.json
 hidden_accounts.json
 net_worth_history.json
+transactions_cache.json
 __pycache__/
 *.pyc

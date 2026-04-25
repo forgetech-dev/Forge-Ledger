@@ -18,8 +18,10 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
+from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 try:
     from snaptrade_client import SnapTrade
@@ -70,10 +72,14 @@ SNAPTRADE_USER_FILE = DEMO_DIR / "snaptrade_user.json"
 BALANCE_CACHE_FILE = DEMO_DIR / "balances_cache.json"
 HIDDEN_ACCOUNTS_FILE = DEMO_DIR / "hidden_accounts.json"
 NET_WORTH_HISTORY_FILE = DEMO_DIR / "net_worth_history.json"
+TRANSACTIONS_CACHE_FILE = DEMO_DIR / "transactions_cache.json"
 BALANCE_REFRESH_SECONDS = int(os.getenv("BALANCE_REFRESH_SECONDS", "3600"))
+TRANSACTION_LIMIT = int(os.getenv("TRANSACTION_LIMIT", "500"))
 BALANCE_CACHE_LOCK = threading.Lock()
+TRANSACTIONS_CACHE_LOCK = threading.Lock()
 NET_WORTH_HISTORY_LOCK = threading.Lock()
 BALANCE_CACHE = None
+TRANSACTIONS_CACHE = None
 
 
 def _read_json(path, default):
@@ -173,9 +179,22 @@ def load_balance_cache():
     return cached
 
 
+def load_transactions_cache():
+    global TRANSACTIONS_CACHE
+    cached = _read_json(TRANSACTIONS_CACHE_FILE, None)
+    with TRANSACTIONS_CACHE_LOCK:
+        TRANSACTIONS_CACHE = cached
+    return cached
+
+
 def get_balance_cache():
     with BALANCE_CACHE_LOCK:
         return _json_clone(BALANCE_CACHE) if BALANCE_CACHE is not None else None
+
+
+def get_transactions_cache():
+    with TRANSACTIONS_CACHE_LOCK:
+        return _json_clone(TRANSACTIONS_CACHE) if TRANSACTIONS_CACHE is not None else None
 
 
 def save_balance_cache(payload):
@@ -187,6 +206,15 @@ def save_balance_cache(payload):
     return cached
 
 
+def save_transactions_cache(payload):
+    global TRANSACTIONS_CACHE
+    cached = _json_clone(payload)
+    with TRANSACTIONS_CACHE_LOCK:
+        TRANSACTIONS_CACHE = cached
+    _write_json(TRANSACTIONS_CACHE_FILE, cached)
+    return cached
+
+
 def empty_balance_payload():
     return {
         "groups": {"deposit": [], "investment": [], "debt": [], "other": []},
@@ -195,6 +223,10 @@ def empty_balance_payload():
         "errors": [],
         "fetched_at": None,
     }
+
+
+def empty_transactions_payload():
+    return {"transactions": [], "errors": [], "fetched_at": None}
 
 
 def with_net_worth_history(payload):
@@ -555,6 +587,131 @@ def _pull_snaptrade(grouped, totals, errors, hidden_keys):
         totals["investment"] += float(amount or 0)
 
 
+def _account_map_for_token(access_token):
+    resp = plaid_client.accounts_get(
+        AccountsGetRequest(access_token=access_token)
+    ).to_dict()
+    accounts = {}
+    for account in resp.get("accounts", []):
+        account_type = str(account.get("type") or "").lower()
+        if account_type not in ("depository", "credit"):
+            continue
+        accounts[account["account_id"]] = {
+            "name": account.get("name"),
+            "mask": account.get("mask"),
+            "type": account_type,
+            "subtype": str(account.get("subtype") or ""),
+        }
+    return accounts
+
+
+def _transaction_category(transaction):
+    pfc = transaction.get("personal_finance_category") or {}
+    detailed = pfc.get("detailed")
+    primary = pfc.get("primary")
+    if detailed:
+        return str(detailed).replace("_", " ").title()
+    if primary:
+        return str(primary).replace("_", " ").title()
+    categories = transaction.get("category") or []
+    if categories:
+        return str(categories[0])
+    return "Uncategorized"
+
+
+def _pull_plaid_transactions(transactions, errors):
+    for tok in load_tokens():
+        try:
+            account_map = _account_map_for_token(tok["access_token"])
+            if not account_map:
+                continue
+
+            cursor = ""
+            has_more = True
+            added = []
+            while has_more:
+                req = TransactionsSyncRequest(
+                    access_token=tok["access_token"],
+                    cursor=cursor,
+                    count=100,
+                )
+                resp = plaid_client.transactions_sync(req).to_dict()
+                added.extend(resp.get("added") or [])
+                cursor = resp.get("next_cursor") or ""
+                has_more = bool(resp.get("has_more"))
+        except plaid.ApiException as e:
+            errors.append(
+                {
+                    "source": "plaid",
+                    "institution": tok["institution_name"],
+                    "error": e.body,
+                }
+            )
+            continue
+
+        for transaction in added:
+            account_id = transaction.get("account_id")
+            account = account_map.get(account_id)
+            if not account:
+                continue
+            amount = float(transaction.get("amount") or 0)
+            date_str = str(transaction.get("date") or "")
+            transactions.append(
+                {
+                    "id": transaction.get("transaction_id"),
+                    "date": date_str,
+                    "name": transaction.get("merchant_name")
+                    or transaction.get("name")
+                    or "Transaction",
+                    "amount": amount,
+                    "pending": bool(transaction.get("pending")),
+                    "category": _transaction_category(transaction),
+                    "institution": tok["institution_name"],
+                    "account_name": account["name"],
+                    "account_mask": account["mask"],
+                    "account_type": account["type"],
+                    "account_subtype": account["subtype"],
+                    "iso_currency_code": transaction.get("iso_currency_code") or "USD",
+                    "payment_channel": transaction.get("payment_channel"),
+                }
+            )
+
+
+def collect_transactions():
+    transactions = []
+    errors = []
+    _pull_plaid_transactions(transactions, errors)
+    transactions.sort(key=lambda t: (t.get("date") or "", t.get("name") or ""), reverse=True)
+    if TRANSACTION_LIMIT > 0:
+        transactions = transactions[:TRANSACTION_LIMIT]
+    return {
+        "transactions": transactions,
+        "errors": errors,
+        "fetched_at": int(time.time()),
+    }
+
+
+def refresh_transactions_cache():
+    payload = collect_transactions()
+    save_transactions_cache(payload)
+    print(
+        f"[Transactions] refreshed at {payload['fetched_at']} "
+        f"with {len(payload['transactions'])} transactions",
+        flush=True,
+    )
+    return payload
+
+
+def record_transactions_refresh_failure(error):
+    cached = get_transactions_cache() or empty_transactions_payload()
+    cached["refresh_failed_at"] = int(time.time())
+    cached["errors"] = list(cached.get("errors") or [])
+    cached["errors"].append({"source": "server", "error": str(error)})
+    save_transactions_cache(cached)
+    print(f"[Transactions] refresh failed: {error}", flush=True)
+    return cached
+
+
 def collect_balances():
     grouped = {"deposit": [], "investment": [], "debt": [], "other": []}
     totals = {"deposit": 0.0, "investment": 0.0, "debt": 0.0, "other": 0.0}
@@ -605,11 +762,16 @@ def balance_refresher_loop():
             refresh_balance_cache()
         except Exception as e:
             record_balance_refresh_failure(e)
+        try:
+            refresh_transactions_cache()
+        except Exception as e:
+            record_transactions_refresh_failure(e)
         time.sleep(BALANCE_REFRESH_SECONDS)
 
 
 def start_balance_refresher():
     load_balance_cache()
+    load_transactions_cache()
     worker = threading.Thread(
         target=balance_refresher_loop,
         name="balance-refresher",
@@ -646,6 +808,36 @@ def balances():
 
     cached["from_cache"] = True
     return jsonify(with_net_worth_history(cached))
+
+
+@app.route("/api/transactions", methods=["GET"])
+def transactions():
+    force_refresh = request.args.get("refresh", "").lower() in ("1", "true", "yes")
+
+    if force_refresh:
+        try:
+            payload = refresh_transactions_cache()
+        except Exception as e:
+            payload = record_transactions_refresh_failure(e)
+            payload["from_cache"] = True
+            return jsonify(payload), 502
+
+        payload = _json_clone(payload)
+        payload["from_cache"] = False
+        return jsonify(payload)
+
+    cached = get_transactions_cache()
+    if cached is None:
+        cached = empty_transactions_payload()
+        cached["errors"].append(
+            {
+                "source": "cache",
+                "error": "Transaction cache is warming up. Try refresh in a moment.",
+            }
+        )
+
+    cached["from_cache"] = True
+    return jsonify(cached)
 
 
 @app.route("/api/accounts/hide", methods=["POST"])
@@ -686,6 +878,7 @@ def reset():
     save_hidden_accounts({"hidden": {}})
     with NET_WORTH_HISTORY_LOCK:
         save_net_worth_history([])
+    save_transactions_cache(empty_transactions_payload())
     save_balance_cache(empty_balance_payload())
     return jsonify({"ok": True})
 
