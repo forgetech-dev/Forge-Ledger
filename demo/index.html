@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Forge Ledger — Accounts</title>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    :root { --fg:#1a1a1a; --muted:#777; --line:#e5e5e5; --bg:#fff; --accent:#111; --debt:#b33; }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: var(--fg); background: var(--bg); }
+    h1 { margin: 0; }
+    h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+    p.lead { color: var(--muted); margin: 0.2rem 0 1rem; }
+    .topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .actions-menu { position: relative; flex: 0 0 auto; }
+    .actions-menu summary { min-height: 42px; padding: 0.52rem 0.9rem; border: 1px solid #d9d9d9; border-radius: 999px; color: var(--fg); background: #fff; cursor: pointer; list-style: none; font-size: 0.9rem; font-weight: 650; }
+    .actions-menu summary::-webkit-details-marker { display: none; }
+    .actions-menu[open] summary { background: #f6f6f6; }
+    .toolbar { position: absolute; right: 0; top: calc(100% + 0.5rem); z-index: 10; display: grid; grid-template-columns: 1fr; gap: 0.45rem; width: min(16rem, calc(100vw - 2rem)); padding: 0.55rem; border: 1px solid #e6e6e6; border-radius: 8px; background: #fff; box-shadow: 0 18px 42px rgba(20, 31, 56, 0.15); }
+    button { min-height: 42px; padding: 0.5rem 0.9rem; font-size: 0.9rem; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 4px; touch-action: manipulation; }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button:hover:not(:disabled) { opacity: 0.88; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .institutions { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+    .category { margin: 0.75rem 0; border: 1px solid #ececec; border-radius: 8px; overflow: hidden; background: #fff; }
+    .category summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.75rem; align-items: center; padding: 0.85rem 0.95rem; cursor: pointer; list-style: none; }
+    .category summary::-webkit-details-marker { display: none; }
+    .category[open] summary { border-bottom: 1px solid var(--line); }
+    .category-main { min-width: 0; }
+    .category-name { display: block; font-size: 1rem; font-weight: 700; }
+    .category-count { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.8rem; }
+    .category-body { padding: 0.35rem 0.75rem 0.75rem; }
+    .category-chevron { width: 0.55rem; height: 0.55rem; border-right: 2px solid #999; border-bottom: 2px solid #999; transform: rotate(45deg); transition: transform 0.15s ease; }
+    .category[open] .category-chevron { transform: rotate(225deg); }
+    .subtotal { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .subtotal.debt { color: var(--debt); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.35rem 0.4rem; border-bottom: 1px solid #f0f0f0; text-align: left; }
+    th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    .tag { display: inline-block; font-size: 0.7rem; padding: 0.05rem 0.4rem; border-radius: 3px; background: #eef; color: #335; margin-left: 0.3rem; }
+    .tag.snaptrade { background: #efe; color: #252; }
+    .networth { margin-top: 2rem; padding: 1rem 1.25rem; background: #f6f6f6; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem; }
+    .networth .amount { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 1.3rem; }
+    .err { color: #b00; white-space: pre-wrap; background: #fee; padding: 0.6rem 0.8rem; border-radius: 4px; font-size: 0.85rem; margin-top: 1rem; }
+    th.actions, td.actions { width: 1%; text-align: right; white-space: nowrap; }
+    button.remove { padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--debt); border-color: #e3b5b5; }
+    .chart { margin: 1.15rem 0 1.25rem; padding: 1.15rem 1.2rem 1rem; border-radius: 28px; background: linear-gradient(180deg, #eaf5ff 0%, #fff 42%); box-shadow: 0 18px 42px rgba(35, 74, 130, 0.12); }
+    .chart-summary { text-align: center; color: #18254f; }
+    .chart-title { font-size: 1rem; font-weight: 700; }
+    .chart-value { margin-top: 0.45rem; font-size: 2rem; line-height: 1; font-weight: 800; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+    .chart-change { display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.65rem; padding: 0.25rem 0.75rem; border-radius: 999px; background: #eaf6e8; color: #43a83b; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .chart-change.down { background: #fdecec; color: #b33; }
+    .chart-date { margin-top: 0.65rem; color: #9098af; font-size: 0.88rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0; }
+    .chart-body { height: 168px; margin-top: -0.2rem; touch-action: none; cursor: crosshair; }
+    .chart svg { width: 100%; height: 100%; display: block; }
+    .chart-line { fill: none; stroke: #52bb43; stroke-width: 5.2; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-line.future { stroke: #d5dae4; }
+    .chart-marker { stroke: #c8ceda; stroke-width: 3; stroke-linecap: round; }
+    .chart-dot { fill: #fff; stroke: #52bb43; stroke-width: 5; }
+    .chart-ranges { display: flex; justify-content: space-around; gap: 0.25rem; margin-top: -0.15rem; }
+    .chart-range { border: 0; border-radius: 999px; padding: 0.55rem 1.05rem; color: #8f96aa; background: transparent; font-size: 0.95rem; font-weight: 800; }
+    .chart-range.active { color: #18254f; background: #f5f6f8; }
+    .chart-empty { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; text-align: center; }
+    @media (max-width: 640px) {
+      body {
+        max-width: none;
+        margin: 0;
+        padding: calc(1rem + env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-left));
+      }
+      h1 { font-size: 1.75rem; line-height: 1.1; }
+      h2 { font-size: 0.98rem; }
+      p.lead { font-size: 0.94rem; line-height: 1.4; margin-bottom: 0.9rem; }
+      .topbar { align-items: flex-start; }
+      .actions-menu summary { min-height: 42px; padding: 0.5rem 0.75rem; }
+      .toolbar { width: min(17rem, calc(100vw - 1.8rem)); }
+      .toolbar button { width: 100%; min-height: 46px; padding: 0.65rem 0.55rem; }
+      .institutions { font-size: 0.82rem; line-height: 1.4; margin-bottom: 0.85rem; }
+      .chart { margin: 1rem -0.1rem 1.1rem; padding: 1rem 0.75rem 0.85rem; border-radius: 26px; }
+      .chart-value { font-size: clamp(1.85rem, 8vw, 2.35rem); }
+      .chart-change { margin-top: 0.55rem; }
+      .chart-date { font-size: 0.82rem; }
+      .chart-body { height: 150px; }
+      .chart-ranges { justify-content: stretch; gap: 0.2rem; }
+      .chart-range { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.5rem 0.1rem; font-size: 0.88rem; }
+      .category { margin: 0.7rem 0; }
+      .category summary { padding: 0.8rem 0.85rem; grid-template-columns: minmax(0, 1fr) auto auto; }
+      .category-body { padding: 0.15rem 0.65rem 0.65rem; }
+      table, tbody { display: block; width: 100%; }
+      thead { display: none; }
+      tr {
+        display: block;
+        margin: 0.65rem 0;
+        padding: 0.75rem 0.8rem;
+        border: 1px solid #eeeeee;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(20, 31, 56, 0.06);
+      }
+      th, td { border-bottom: 0; }
+      td {
+        display: grid;
+        grid-template-columns: minmax(5.5rem, 34%) minmax(0, 1fr);
+        gap: 0.75rem;
+        align-items: start;
+        padding: 0.28rem 0;
+        overflow-wrap: anywhere;
+      }
+      td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 650;
+      }
+      td.num { text-align: left; }
+      td.actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 0.55rem;
+        width: 100%;
+      }
+      td.actions::before { content: ""; }
+      button.remove { min-height: 38px; padding: 0.35rem 0.7rem; }
+      .tag { margin-left: 0.25rem; }
+      .networth {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.35rem;
+        margin-top: 1.25rem;
+        border-radius: 8px;
+      }
+      .networth .amount { font-size: 1.45rem; }
+    }
+    @media (max-width: 370px) {
+      .toolbar { width: calc(100vw - 1.8rem); }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Forge Ledger</h1>
+    <details class="actions-menu" id="actions-menu">
+      <summary>Manage</summary>
+      <div class="toolbar">
+        <button class="primary" id="add-plaid">+ Add bank (Plaid)</button>
+        <button id="add-snaptrade">+ Connect brokerage (SnapTrade)</button>
+        <button id="refresh">Refresh</button>
+        <button id="remove-mode">Remove</button>
+        <button id="reset">Unlink all</button>
+      </div>
+    </details>
+  </div>
+  <p class="lead">Connect banks via Plaid, brokerages (incl. Fidelity) via SnapTrade. Balances grouped into Deposit, Investment, Debt.</p>
+  <section class="chart" id="chart"></section>
+  <div class="institutions" id="institutions">No accounts connected yet.</div>
+  <div id="out"></div>
+
+<script>
+const out = document.getElementById("out");
+const instEl = document.getElementById("institutions");
+const chartEl = document.getElementById("chart");
+const actionsMenu = document.getElementById("actions-menu");
+const removeModeBtn = document.getElementById("remove-mode");
+let removeMode = false;
+let chartRange = "1M";
+let chartHistory = [];
+let openCategories = new Set();
+
+function fmt(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  return Number(n).toLocaleString(undefined, { style: "currency", currency: "USD" });
+}
+
+function fmtShort(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  return Number(n).toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+}
+
+function freshness(bal) {
+  if (!bal.fetched_at) return "Cache warming up.";
+  const when = new Date(bal.fetched_at * 1000).toLocaleString();
+  return bal.from_cache ? `Last updated ${when}.` : `Refreshed ${when}.`;
+}
+
+function fmtDate(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function renderNetWorthChart(history) {
+  chartHistory = history || [];
+  const allPoints = chartHistory
+    .filter(p => p && p.date && Number.isFinite(Number(p.net_worth)))
+    .map(p => ({ date: p.date, net_worth: Number(p.net_worth) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  if (!allPoints.length) {
+    chartEl.innerHTML = `
+      <div class="chart-summary">
+        <div class="chart-title">Net worth</div>
+      </div>
+      <div class="chart-empty">Daily net worth history will appear after the first successful refresh.</div>`;
+    return;
+  }
+
+  const latestDate = new Date(`${allPoints[allPoints.length - 1].date}T00:00:00`);
+  const rangeDays = { "1W": 7, "1M": 31, "3M": 92, "1Y": 366 };
+  const visibleStart = new Date(latestDate);
+  if (chartRange === "YTD") {
+    visibleStart.setMonth(0, 1);
+  } else {
+    visibleStart.setDate(visibleStart.getDate() - (rangeDays[chartRange] || 31) + 1);
+  }
+
+  let points = allPoints.filter(p => new Date(`${p.date}T00:00:00`) >= visibleStart);
+  if (!points.length) points = allPoints.slice(-1);
+
+  const width = 820;
+  const height = 168;
+  const left = 22;
+  const right = 22;
+  const top = 18;
+  const bottom = 20;
+  const values = points.map(p => p.net_worth);
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  const spread = max - min;
+  const pad = Math.max(spread * 0.22, Math.abs(max || 1) * 0.008, 60);
+  min -= pad;
+  max += pad;
+
+  const xFor = (i) => points.length === 1
+    ? left + (width - left - right) / 2
+    : left + (i / (points.length - 1)) * (width - left - right);
+  const yFor = (value) => top + ((max - value) / (max - min)) * (height - top - bottom);
+  const scaled = points.map((p, i) => ({ ...p, x: xFor(i), y: yFor(p.net_worth) }));
+  const pathFor = (items) => items
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(" ");
+  const ranges = ["1W", "1M", "3M", "YTD", "1Y"]
+    .map(range => `<button type="button" class="chart-range ${range === chartRange ? "active" : ""}" data-chart-range="${range}">${range}</button>`)
+    .join("");
+
+  chartEl.innerHTML = `
+    <div class="chart-summary">
+      <div class="chart-title">Net worth</div>
+      <div class="chart-value" id="chart-value"></div>
+      <div class="chart-change" id="chart-change"></div>
+      <div class="chart-date" id="chart-date"></div>
+    </div>
+    <div class="chart-body">
+      <svg id="networth-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Net worth history chart">
+        <path id="chart-future" class="chart-line future"></path>
+        <path id="chart-active" class="chart-line"></path>
+        <line id="chart-marker" class="chart-marker" x1="0" x2="0" y1="${top}" y2="${height - bottom}"></line>
+        <circle id="chart-dot" class="chart-dot" cx="0" cy="0" r="6"></circle>
+      </svg>
+    </div>
+    <div class="chart-ranges">${ranges}</div>`;
+
+  const svg = document.getElementById("networth-chart");
+  const activeLine = document.getElementById("chart-active");
+  const futureLine = document.getElementById("chart-future");
+  const marker = document.getElementById("chart-marker");
+  const dot = document.getElementById("chart-dot");
+  const valueEl = document.getElementById("chart-value");
+  const changeEl = document.getElementById("chart-change");
+  const dateEl = document.getElementById("chart-date");
+
+  function selectPoint(index) {
+    const selectedIndex = Math.max(0, Math.min(index, scaled.length - 1));
+    const p = scaled[selectedIndex];
+    const firstValue = scaled[0].net_worth;
+    const change = p.net_worth - firstValue;
+    const pct = firstValue ? (change / firstValue) * 100 : 0;
+    const isDown = change < 0;
+    activeLine.setAttribute("d", pathFor(scaled.slice(0, selectedIndex + 1)));
+    futureLine.setAttribute("d", selectedIndex < scaled.length - 1 ? pathFor(scaled.slice(selectedIndex)) : "");
+    marker.setAttribute("x1", p.x);
+    marker.setAttribute("x2", p.x);
+    dot.setAttribute("cx", p.x);
+    dot.setAttribute("cy", p.y);
+    valueEl.textContent = fmt(p.net_worth);
+    changeEl.classList.toggle("down", isDown);
+    changeEl.textContent = `${isDown ? "↘" : "↗"} ${Math.abs(pct).toFixed(2)}%`;
+    dateEl.textContent = fmtDate(p.date);
+  }
+
+  function indexFromClientX(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * width;
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    scaled.forEach((p, i) => {
+      const distance = Math.abs(p.x - x);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    });
+    return bestIndex;
+  }
+
+  svg.addEventListener("pointerdown", (event) => {
+    svg.setPointerCapture(event.pointerId);
+    selectPoint(indexFromClientX(event.clientX));
+  });
+  svg.addEventListener("pointermove", (event) => {
+    if (event.buttons || event.pointerType === "mouse") {
+      selectPoint(indexFromClientX(event.clientX));
+    }
+  });
+  chartEl.querySelectorAll("[data-chart-range]").forEach(button => {
+    button.addEventListener("click", () => {
+      chartRange = button.dataset.chartRange;
+      renderNetWorthChart(chartHistory);
+    });
+  });
+
+  selectPoint(scaled.length - 1);
+}
+
+async function addPlaid() {
+  const r = await fetch("/api/create_link_token", { method: "POST" });
+  const data = await r.json();
+  if (!data.link_token) {
+    out.innerHTML = `<pre class="err">${JSON.stringify(data, null, 2)}</pre>`;
+    return;
+  }
+  const handler = Plaid.create({
+    token: data.link_token,
+    onSuccess: async (public_token) => {
+      await fetch("/api/set_access_token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ public_token }),
+      });
+      await refresh(true);
+    },
+    onExit: (err) => {
+      if (err) out.innerHTML = `<pre class="err">${JSON.stringify(err, null, 2)}</pre>`;
+    },
+  });
+  handler.open();
+}
+
+async function addSnapTrade() {
+  const r = await fetch("/api/snaptrade/connect", { method: "POST" });
+  const data = await r.json();
+  if (!data.redirect_uri) {
+    out.innerHTML = `<pre class="err">${JSON.stringify(data, null, 2)}</pre>`;
+    return;
+  }
+  const w = window.open(
+    data.redirect_uri,
+    "snaptrade_portal",
+    "width=520,height=720"
+  );
+  // Poll for popup close, then refresh.
+  const timer = setInterval(() => {
+    if (!w || w.closed) {
+      clearInterval(timer);
+      refresh(true);
+    }
+  }, 600);
+}
+
+async function refresh(force = false) {
+  const path = force ? "/api/balances?refresh=1" : "/api/balances";
+  const bal = await fetch(path).then(r => r.json());
+
+  if (bal.error) {
+    out.innerHTML = `<pre class="err">${JSON.stringify(bal, null, 2)}</pre>`;
+    return;
+  }
+
+  renderNetWorthChart(bal.history);
+
+  const allAccts = Object.values(bal.groups).flat();
+  const instNames = [...new Set(allAccts.map(a => a.institution))];
+  const fresh = freshness(bal);
+  const hiddenNote = bal.hidden_account_count
+    ? ` ${bal.hidden_account_count} hidden.`
+    : "";
+  instEl.textContent = instNames.length
+    ? `Connected (${instNames.length}): ${instNames.join(", ")}. ${fresh}${hiddenNote}`
+    : bal.hidden_account_count
+      ? `No visible accounts. ${fresh}${hiddenNote}`
+      : `No accounts connected yet. ${fresh}`;
+
+  if (!allAccts.length) {
+    out.innerHTML = (bal.errors || []).length
+      ? `<pre class="err">${JSON.stringify(bal.errors, null, 2)}</pre>`
+      : "";
+    return;
+  }
+
+  const cats = [
+    { key: "deposit",    label: "Deposit  (checking / savings)" },
+    { key: "investment", label: "Investment" },
+    { key: "debt",       label: "Debt  (credit cards / loans)" },
+  ];
+  if ((bal.groups.other || []).length) cats.push({ key: "other", label: "Other" });
+
+  let html = "";
+  for (const { key, label } of cats) {
+    const accounts = bal.groups[key] || [];
+    const rows = (bal.groups[key] || []).map(a => {
+      const tag = a.source === "snaptrade"
+        ? `<span class="tag snaptrade">SnapTrade</span>`
+        : `<span class="tag">Plaid</span>`;
+      const remove = removeMode && a.account_key
+        ? `<button class="remove" data-hide-account="${a.account_key}">Remove</button>`
+        : "";
+      return `
+        <tr>
+          <td data-label="Institution">${a.institution}${tag}</td>
+          <td data-label="Account">${a.name}${a.mask ? ` <span class="muted">…${a.mask}</span>` : ""}</td>
+          <td data-label="Subtype">${a.subtype || a.type}</td>
+          <td data-label="Balance" class="num">${fmt(a.current)}</td>
+          ${removeMode ? `<td data-label="" class="actions">${remove}</td>` : ""}
+        </tr>`;
+    }).join("");
+    const actionHeader = removeMode ? `<th class="actions"></th>` : "";
+    const cls = key === "debt" ? "subtotal debt" : "subtotal";
+    const openAttr = openCategories.has(key) ? " open" : "";
+    const countLabel = `${accounts.length} account${accounts.length === 1 ? "" : "s"}`;
+    html += `
+      <details class="category" data-category="${key}"${openAttr}>
+        <summary>
+          <span class="category-main">
+            <span class="category-name">${label}</span>
+            <span class="category-count">${countLabel}</span>
+          </span>
+          <span class="${cls}">${fmt(bal.totals[key] || 0)}</span>
+          <span class="category-chevron" aria-hidden="true"></span>
+        </summary>
+        <div class="category-body">
+          ${rows
+            ? `<table>
+                <thead><tr><th>Institution</th><th>Account</th><th>Subtype</th><th class="num">Balance</th>${actionHeader}</tr></thead>
+                <tbody>${rows}</tbody>
+               </table>`
+            : `<p class="muted">None.</p>`}
+        </div>
+      </details>`;
+  }
+
+  html += `
+    <div class="networth">
+      <span>Net worth <span class="muted">(deposit + investment − debt)</span></span>
+      <span class="amount">${fmt(bal.net_worth)}</span>
+    </div>`;
+
+  if ((bal.errors || []).length) {
+    html += `<pre class="err">${JSON.stringify(bal.errors, null, 2)}</pre>`;
+  }
+
+  out.innerHTML = html;
+}
+
+async function hideAccount(accountKey) {
+  if (!confirm("Remove this account from Forge Ledger?")) return;
+  const r = await fetch("/api/accounts/hide", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ account_key: accountKey }),
+  });
+  const data = await r.json();
+  if (!r.ok) {
+    out.innerHTML = `<pre class="err">${JSON.stringify(data, null, 2)}</pre>`;
+    return;
+  }
+  await refresh();
+}
+
+async function resetAll() {
+  if (!confirm("Unlink all accounts locally? (Plaid and SnapTrade connections remain on their side.)")) return;
+  await fetch("/api/reset", { method: "POST" });
+  await refresh();
+}
+
+out.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const button = event.target.closest("button[data-hide-account]");
+  if (!button) return;
+  hideAccount(button.dataset.hideAccount);
+});
+
+out.addEventListener("toggle", (event) => {
+  const details = event.target;
+  if (!(details instanceof HTMLDetailsElement) || !details.dataset.category) return;
+  if (details.open) {
+    openCategories.add(details.dataset.category);
+  } else {
+    openCategories.delete(details.dataset.category);
+  }
+}, true);
+
+document.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element) || !actionsMenu.open) return;
+  if (!actionsMenu.contains(event.target)) actionsMenu.open = false;
+});
+
+document.getElementById("add-plaid").onclick = addPlaid;
+document.getElementById("add-snaptrade").onclick = addSnapTrade;
+document.getElementById("refresh").onclick = () => refresh(true);
+removeModeBtn.onclick = () => {
+  removeMode = !removeMode;
+  removeModeBtn.textContent = removeMode ? "Done" : "Remove";
+  refresh();
+};
+document.getElementById("reset").onclick = resetAll;
+
+refresh();
+</script>
+</body>
+</html>

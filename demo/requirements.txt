@@ -1,0 +1,4 @@
+flask
+plaid-python
+python-dotenv
+snaptrade-python-sdk
