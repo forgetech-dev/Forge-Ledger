@@ -4,5 +4,7 @@ balances_cache.json
 hidden_accounts.json
 net_worth_history.json
 transactions_cache.json
+investments_cache.json
+investment_history.json
 __pycache__/
 *.pyc

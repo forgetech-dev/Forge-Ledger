@@ -72,6 +72,18 @@
     .tx-search-icon { color: #8f96aa; font-size: 1.1rem; }
     .tx-search input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--fg); font: inherit; font-size: 1rem; }
     .tx-search input::placeholder { color: #9aa1b4; }
+    .tx-summary { margin: 1rem 0 0.9rem; padding: 1rem 1.1rem; border-radius: 22px; background: #f8fafc; box-shadow: inset 0 0 0 1px #eef1f5; }
+    .tx-summary-label { color: #8f96aa; font-size: 0.82rem; font-weight: 800; text-transform: uppercase; }
+    .tx-summary-value { margin-top: 0.25rem; color: #18254f; font-size: 1.8rem; line-height: 1; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .tx-summary-note { margin-top: 0.45rem; color: #8f96aa; font-size: 0.82rem; line-height: 1.35; }
+    .tx-breakdown { display: grid; gap: 0.5rem; margin-top: 0.85rem; }
+    .tx-breakdown-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; }
+    .tx-breakdown-label { display: flex; align-items: center; gap: 0.45rem; min-width: 0; color: #18254f; font-size: 0.88rem; font-weight: 750; }
+    .tx-breakdown-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tx-breakdown-dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #52bb43; flex: 0 0 auto; }
+    .tx-breakdown-amount { color: #18254f; font-size: 0.88rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tx-breakdown-bar { grid-column: 1 / -1; height: 0.4rem; overflow: hidden; border-radius: 999px; background: #ebeff4; }
+    .tx-breakdown-fill { height: 100%; border-radius: inherit; background: #52bb43; }
     .tx-day { margin: 1.35rem 0 0.65rem; color: #949bad; font-size: 0.86rem; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
     .tx-list { display: grid; gap: 0.65rem; }
     .tx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.2rem 0; }
@@ -88,6 +100,36 @@
     .tx-amount.inflow { color: #3d9d36; }
     .tx-dot { display: inline-block; width: 0.42rem; height: 0.42rem; margin-left: 0.4rem; border-radius: 50%; background: #77a8ed; vertical-align: middle; }
     .tx-empty { margin: 2rem 0; color: var(--muted); text-align: center; }
+    .invest-card { margin: 1.15rem 0 1.25rem; padding: 1.2rem 1.2rem 1rem; border-radius: 28px; background: #fff; box-shadow: 0 18px 42px rgba(35, 74, 130, 0.12); }
+    .invest-summary { text-align: center; color: #18254f; }
+    .invest-change { color: #3d9d36; font-size: 1.1rem; font-weight: 850; }
+    .invest-change.down { color: #b33; }
+    .invest-value { margin-top: 0.45rem; font-size: 2.25rem; line-height: 1; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .invest-caption { margin-top: 0.45rem; color: #8f96aa; font-size: 1rem; font-weight: 750; }
+    .invest-chart { height: 150px; margin-top: 0.25rem; touch-action: none; cursor: crosshair; }
+    .invest-chart svg { width: 100%; height: 100%; display: block; }
+    .invest-area { fill: rgba(82, 187, 67, 0.1); }
+    .invest-line { fill: none; stroke: #52bb43; stroke-width: 5.2; stroke-linecap: round; stroke-linejoin: round; }
+    .invest-line.future { stroke: #d5dae4; }
+    .invest-marker { stroke: #c8ceda; stroke-width: 3; stroke-linecap: round; }
+    .invest-dot { fill: #fff; stroke: #52bb43; stroke-width: 5; }
+    .section-title { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin: 1.25rem 0 0.65rem; color: #18254f; font-size: 1.1rem; font-weight: 850; }
+    .section-subtitle { color: #9aa1b4; font-size: 0.82rem; font-weight: 850; text-transform: uppercase; }
+    .alloc-card { padding: 1rem; border: 1px solid #ececec; border-radius: 18px; background: #fff; }
+    .alloc-row { display: grid; grid-template-columns: minmax(5.5rem, 32%) minmax(3rem, 1fr) auto; gap: 0.75rem; align-items: center; padding: 0.45rem 0; color: #18254f; font-size: 1rem; }
+    .alloc-bar { height: 0.34rem; overflow: hidden; border-radius: 999px; background: #d1d6e0; }
+    .alloc-fill { height: 100%; border-radius: inherit; background: #18254f; }
+    .invest-list { display: grid; gap: 0.7rem; }
+    .invest-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; padding: 0.8rem 0.9rem; border: 1px solid #ececec; border-radius: 16px; background: #fff; }
+    .holding-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+    .invest-symbol { min-width: 3.7rem; padding: 0.45rem 0.55rem; border-radius: 8px; color: #61708a; background: #f5f6f8; text-align: center; font-weight: 850; }
+    .invest-main { min-width: 0; }
+    .invest-name { color: #18254f; font-size: 1rem; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .invest-sub { margin-top: 0.2rem; color: #9aa1b4; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .invest-amount { color: #18254f; font-size: 1rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+    .spark { width: 5.2rem; height: 1.8rem; }
+    .spark path { fill: none; stroke: #52bb43; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .spark.down path { stroke: #d83b35; }
     @media (max-width: 640px) {
       body {
         max-width: none;
@@ -110,10 +152,20 @@
       .chart-ranges { justify-content: stretch; gap: 0.2rem; }
       .chart-range { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0.5rem 0.1rem; font-size: 0.88rem; }
       .view-tabs { margin-top: 0.75rem; }
+      .tx-summary { padding: 0.95rem 1rem; border-radius: 20px; }
+      .tx-summary-value { font-size: 1.65rem; }
       .tx-search { margin: 1rem 0 1.15rem; padding: 0.8rem 0.9rem; }
       .tx-row { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; padding: 0.45rem 0; }
       .tx-meta { justify-content: space-between; }
       .tx-pill { max-width: min(11rem, 55vw); }
+      .invest-card { margin: 1rem -0.1rem 1.1rem; padding: 1rem 0.75rem 0.85rem; border-radius: 26px; }
+      .invest-value { font-size: clamp(2rem, 9vw, 2.6rem); }
+      .invest-chart { height: 135px; }
+      .alloc-row { grid-template-columns: minmax(4.8rem, 30%) minmax(2.5rem, 1fr) auto; gap: 0.55rem; font-size: 0.95rem; }
+      .invest-row,
+      .holding-row { grid-template-columns: auto minmax(0, 1fr); }
+      .invest-amount { grid-column: 2; text-align: left; color: #3d9d36; }
+      .spark { display: none; }
       .category { margin: 0.7rem 0; }
       .category summary { padding: 0.8rem 0.85rem; grid-template-columns: minmax(0, 1fr) auto auto; }
       .category-body { padding: 0.15rem 0.65rem 0.65rem; }
@@ -175,6 +227,7 @@
       <div class="toolbar">
         <button class="primary" id="add-plaid">+ Add bank (Plaid)</button>
         <button id="add-snaptrade">+ Connect brokerage (SnapTrade)</button>
+        <button id="plaid-investments">Enable Plaid investments</button>
         <button id="refresh">Refresh</button>
         <button id="remove-mode">Remove</button>
         <button id="reset">Unlink all</button>
@@ -184,6 +237,7 @@
   <p class="lead">Connect banks via Plaid, brokerages (incl. Fidelity) via SnapTrade. Balances grouped into Deposit, Investment, Debt.</p>
   <nav class="view-tabs" aria-label="Views">
     <button class="view-tab active" id="overview-tab" type="button">Overview</button>
+    <button class="view-tab" id="investments-tab" type="button">Investments</button>
     <button class="view-tab" id="transactions-tab" type="button">Transactions</button>
   </nav>
   <section class="view" id="overview-view">
@@ -192,11 +246,16 @@
     <div id="out"></div>
   </section>
   <section class="view" id="transactions-view" hidden>
+    <section class="tx-summary" id="tx-summary"></section>
     <label class="tx-search">
       <span class="tx-search-icon">⌕</span>
       <input id="tx-search" type="search" placeholder="Search" autocomplete="off" />
     </label>
     <div id="tx-out"></div>
+  </section>
+  <section class="view" id="investments-view" hidden>
+    <section class="invest-card" id="invest-card"></section>
+    <div id="invest-out"></div>
   </section>
 
 <script>
@@ -207,16 +266,23 @@ const actionsMenu = document.getElementById("actions-menu");
 const removeModeBtn = document.getElementById("remove-mode");
 const overviewView = document.getElementById("overview-view");
 const transactionsView = document.getElementById("transactions-view");
+const investmentsView = document.getElementById("investments-view");
 const overviewTab = document.getElementById("overview-tab");
+const investmentsTab = document.getElementById("investments-tab");
 const transactionsTab = document.getElementById("transactions-tab");
+const txSummary = document.getElementById("tx-summary");
 const txSearch = document.getElementById("tx-search");
 const txOut = document.getElementById("tx-out");
+const investCard = document.getElementById("invest-card");
+const investOut = document.getElementById("invest-out");
 let removeMode = false;
 let chartRange = "1M";
+let investmentChartRange = "1M";
 let chartHistory = [];
 let openCategories = new Set();
 let currentView = "overview";
 let transactionsData = [];
+let investmentsData = null;
 
 function fmt(n) {
   if (n == null || Number.isNaN(Number(n))) return "—";
@@ -273,7 +339,7 @@ function txDateLabel(dateStr) {
 }
 
 function txCategoryClass(category) {
-  const c = String(category || "").toLowerCase();
+  const c = displayCategory(category).toLowerCase();
   if (c.includes("restaurant") || c.includes("food") || c.includes("grocery")) return "food";
   if (c.includes("transfer") || c.includes("payment") || c.includes("loan")) return "transfer";
   if (c.includes("shop") || c.includes("merchandise")) return "shopping";
@@ -281,7 +347,130 @@ function txCategoryClass(category) {
   return "";
 }
 
+function isThisMonth(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+function isInternalPayment(tx) {
+  const primary = String(tx.category_primary || "").toUpperCase();
+  const detailed = String(tx.category_detailed || "").toUpperCase();
+  const category = String(tx.category || "").toLowerCase();
+  const name = String(tx.name || "").toLowerCase();
+  return (
+    primary.startsWith("TRANSFER") ||
+    primary === "LOAN_PAYMENTS" ||
+    detailed.includes("ACCOUNT_TRANSFER") ||
+    detailed.includes("CREDIT_CARD_PAYMENT") ||
+    category.includes("transfer") ||
+    category.includes("credit card payment") ||
+    category.includes("loan payment") ||
+    name.includes("credit crd autopay") ||
+    name.includes("automatic payment") ||
+    name.includes("payment - thank")
+  );
+}
+
+function categoryColor(category) {
+  const colors = ["#52bb43", "#8b35dd", "#1d72b8", "#b56b0a", "#d84b8a", "#61708a"];
+  let hash = 0;
+  for (const char of displayCategory(category)) hash = (hash + char.charCodeAt(0)) % colors.length;
+  return colors[hash];
+}
+
+function categoryEmoji(category) {
+  const c = displayCategory(category).toLowerCase();
+  if (c.includes("restaurant") || c.includes("food") || c.includes("dining")) return "🍔";
+  if (c.includes("grocery")) return "🥑";
+  if (c.includes("entertainment")) return "🎟️";
+  if (c.includes("travel") || c.includes("flight") || c.includes("hotel")) return "✈️";
+  if (c.includes("transport") || c.includes("gas") || c.includes("parking")) return "🚗";
+  if (c.includes("shop") || c.includes("merchandise")) return "🛍️";
+  if (c.includes("health") || c.includes("medical")) return "🏥";
+  if (c.includes("rent") || c.includes("home") || c.includes("utilities")) return "🏠";
+  if (c.includes("transfer") || c.includes("payment")) return "↔️";
+  if (c.includes("income") || c.includes("payroll")) return "💵";
+  if (c.includes("subscription")) return "🔁";
+  if (c.includes("education")) return "🎓";
+  if (c.includes("loan") || c.includes("bank fee")) return "🏦";
+  return "•";
+}
+
+function displayCategory(category) {
+  const c = String(category || "Uncategorized");
+  const lower = c.toLowerCase();
+  if (lower === "general merchandise superstores") return "Shopping";
+  if (
+    lower.includes("transport") ||
+    lower.includes("taxi") ||
+    lower.includes("ride share") ||
+    lower.includes("rideshare") ||
+    lower.includes("parking") ||
+    lower.includes("gas") ||
+    lower.includes("fuel") ||
+    lower.includes("public transit")
+  ) return "Transportation";
+  return c;
+}
+
+function renderMonthlySpendSummary() {
+  const monthTransactions = transactionsData.filter(tx => isThisMonth(tx.date));
+  const spending = monthTransactions.filter(tx =>
+    Number(tx.amount) > 0 && !isInternalPayment(tx)
+  );
+  const excluded = monthTransactions.filter(tx =>
+    Number(tx.amount) > 0 && isInternalPayment(tx)
+  );
+  const total = spending.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const categoryTotals = new Map();
+  for (const tx of spending) {
+    const category = displayCategory(tx.category);
+    categoryTotals.set(category, (categoryTotals.get(category) || 0) + Number(tx.amount || 0));
+  }
+  const sortedCategories = [...categoryTotals.entries()]
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const mainCategories = sortedCategories.slice(0, 8);
+  const otherTotal = sortedCategories
+    .slice(8)
+    .reduce((sum, item) => sum + item.amount, 0);
+  const breakdown = otherTotal > 0
+    ? [...mainCategories, { category: "Other", amount: otherTotal }]
+    : mainCategories;
+  const breakdownHtml = breakdown.length
+    ? `<div class="tx-breakdown">
+        ${breakdown.map(({ category, amount }) => {
+          const pct = total ? Math.max(2, (amount / total) * 100) : 0;
+          const color = categoryColor(category);
+          return `
+            <div class="tx-breakdown-row">
+              <div class="tx-breakdown-label">
+                <span class="tx-breakdown-dot" style="background:${color}"></span>
+                <span class="tx-breakdown-name">${categoryEmoji(category)} ${escapeHtml(category)}</span>
+              </div>
+              <div class="tx-breakdown-amount">${fmt(amount)}</div>
+              <div class="tx-breakdown-bar">
+                <div class="tx-breakdown-fill" style="width:${pct.toFixed(1)}%; background:${color}"></div>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>`
+    : "";
+  const now = new Date();
+  const monthName = now.toLocaleDateString(undefined, { month: "long" });
+  txSummary.innerHTML = `
+    <div class="tx-summary-label">${escapeHtml(monthName)} spending</div>
+    <div class="tx-summary-value">${fmt(total)}</div>
+    <div class="tx-summary-note">
+      ${spending.length} spending transaction${spending.length === 1 ? "" : "s"} counted.
+      ${excluded.length} transfer/payment transaction${excluded.length === 1 ? "" : "s"} excluded to avoid double counting card payments.
+    </div>
+    ${breakdownHtml}`;
+}
+
 function renderTransactions() {
+  renderMonthlySpendSummary();
   const q = txSearch.value.trim().toLowerCase();
   const filtered = transactionsData.filter((t) => {
     if (!q) return true;
@@ -319,7 +508,7 @@ function renderTransactions() {
           <div class="tx-sub">${escapeHtml(account)}</div>
         </div>
         <div class="tx-meta">
-          <span class="tx-pill ${txCategoryClass(tx.category)}">${escapeHtml(tx.category)}</span>
+          <span class="tx-pill ${txCategoryClass(tx.category)}">${categoryEmoji(tx.category)} ${escapeHtml(displayCategory(tx.category))}</span>
           <span class="tx-amount ${isInflow ? "inflow" : ""}">${isInflow ? "+" : ""}${amount}${pending}</span>
         </div>
       </div>`;
@@ -347,11 +536,462 @@ async function refreshTransactions(force = false) {
 function showView(view) {
   currentView = view;
   const showTransactions = view === "transactions";
-  overviewView.hidden = showTransactions;
+  const showInvestments = view === "investments";
+  overviewView.hidden = showTransactions || showInvestments;
   transactionsView.hidden = !showTransactions;
-  overviewTab.classList.toggle("active", !showTransactions);
+  investmentsView.hidden = !showInvestments;
+  overviewTab.classList.toggle("active", view === "overview");
+  investmentsTab.classList.toggle("active", showInvestments);
   transactionsTab.classList.toggle("active", showTransactions);
   if (showTransactions && transactionsData.length === 0) refreshTransactions();
+  if (showInvestments && !investmentsData) refreshInvestments();
+}
+
+function scaledPointsFromValues(values, width, height, pad = 10) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const spread = max - min || 1;
+  return values.map((value, i) => {
+    const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
+    const y = pad + ((max - value) / spread) * (height - pad * 2);
+    return { x, y };
+  });
+}
+
+function pathFromValues(values, width, height, pad = 10) {
+  return scaledPointsFromValues(values, width, height, pad)
+    .map((point, i) => `${i === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+}
+
+function localIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function syntheticInvestmentSeries(total) {
+  const days = 7;
+  const target = Number(total || 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const series = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (days - 1 - i));
+    series.push({ date: localIsoDate(d), total_value: target });
+  }
+  return series;
+}
+
+function investmentChartSeries(data, total) {
+  const history = (data.history || [])
+    .filter(point => point && point.date && Number.isFinite(Number(point.total_value)))
+    .map(point => ({ date: String(point.date), total_value: Number(point.total_value) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return history.length >= 2 ? history : syntheticInvestmentSeries(total);
+}
+
+function visibleInvestmentSeries(data, total) {
+  const allPoints = investmentChartSeries(data, total);
+  const latest = allPoints[allPoints.length - 1];
+  if (!latest) return [];
+  const latestDate = new Date(`${latest.date}T00:00:00`);
+  const rangeDays = { "1W": 7, "1M": 31, "3M": 92, "1Y": 366 };
+  const start = new Date(latestDate);
+  if (investmentChartRange === "YTD") {
+    start.setMonth(0, 1);
+  } else {
+    start.setDate(start.getDate() - (rangeDays[investmentChartRange] || 31) + 1);
+  }
+  const points = allPoints.filter(point => new Date(`${point.date}T00:00:00`) >= start);
+  return points.length ? points : allPoints.slice(-1);
+}
+
+function isUnvestedStockGrantHolding(row) {
+  const text = [
+    row?.name,
+    row?.account_name,
+  ].map(value => String(value || "").toLowerCase()).join(" ");
+  return (
+    text.includes("stock plan") &&
+    (text.includes("ffiv") || text.includes("f5")) &&
+    Number(row?.quantity || 0) > 200 &&
+    Number(row?.value || 0) > 50000
+  );
+}
+
+function isBuyingPowerHolding(row) {
+  const symbol = String(holdingText(row?.symbol, "")).toUpperCase();
+  const text = [
+    holdingText(row?.symbol, ""),
+    holdingNameText(row?.name, ""),
+    row?.asset_type,
+  ].map(value => String(value || "").toLowerCase()).join(" ");
+  return (
+    symbol === "USD" ||
+    symbol === "CUR:USD" ||
+    symbol === "FDLXX" ||
+    symbol === "SPAXX" ||
+    symbol.startsWith("CUR:") ||
+    text.includes("u s dollar") ||
+    text.includes("buying power") ||
+    text.includes("money market") ||
+    text.includes("treasury only money") ||
+    text.includes("government money market")
+  );
+}
+
+function investmentAccountKey(source, institution, accountName) {
+  return [source || "", institution || "", accountName || ""].join("|");
+}
+
+function isStockPlanAccount(row) {
+  const text = [
+    row?.name,
+    row?.subtype,
+    row?.account_name,
+  ].map(value => String(value || "").toLowerCase()).join(" ");
+  return text.includes("stock plan");
+}
+
+function reconcileStockPlanHoldings(accounts, holdings) {
+  const accountValues = new Map();
+  for (const account of accounts) {
+    if (!isStockPlanAccount(account)) continue;
+    const key = investmentAccountKey(account.source, account.institution, account.name);
+    accountValues.set(key, Number(account.current || 0));
+  }
+  const used = new Set();
+  return holdings.flatMap(holding => {
+    const key = investmentAccountKey(holding.source, holding.institution, holding.account_name);
+    const accountValue = accountValues.get(key) || 0;
+    if (!accountValue) return [holding];
+    if (used.has(key)) return [];
+    used.add(key);
+    return [{ ...holding, value: accountValue }];
+  });
+}
+
+function accountsFromInvestableHoldings(accounts, holdings) {
+  if (!holdings.length) return accounts;
+
+  const totals = new Map();
+  for (const holding of holdings) {
+    const key = investmentAccountKey(holding.source, holding.institution, holding.account_name);
+    totals.set(key, (totals.get(key) || 0) + Number(holding.value || 0));
+  }
+
+  const used = new Set();
+  const displayAccounts = [];
+  for (const account of accounts) {
+    const key = investmentAccountKey(account.source, account.institution, account.name);
+    const value = totals.get(key) || 0;
+    if (value <= 0) continue;
+    used.add(key);
+    displayAccounts.push({ ...account, current: value });
+  }
+
+  for (const holding of holdings) {
+    const key = investmentAccountKey(holding.source, holding.institution, holding.account_name);
+    if (used.has(key)) continue;
+    used.add(key);
+    displayAccounts.push({
+      institution: holding.institution,
+      name: holding.account_name || holding.institution || "Investment Account",
+      mask: "",
+      subtype: "investment",
+      current: totals.get(key) || 0,
+      source: holding.source,
+    });
+  }
+
+  return displayAccounts.sort((a, b) => Number(b.current || 0) - Number(a.current || 0));
+}
+
+function displayInvestmentData(data) {
+  const rawAccounts = data.accounts || [];
+  const filteredHoldings = (data.holdings || []).filter(holding =>
+    !isUnvestedStockGrantHolding(holding) && !isBuyingPowerHolding(holding)
+  );
+  const holdings = reconcileStockPlanHoldings(rawAccounts, filteredHoldings);
+  const accounts = accountsFromInvestableHoldings(rawAccounts, holdings);
+  const totalValue = holdings.length
+    ? holdings.reduce((sum, holding) => sum + Number(holding.value || 0), 0)
+    : accounts.reduce((sum, account) => sum + Number(account.current || 0), 0);
+  const allocationTotals = new Map();
+  for (const holding of holdings) {
+    const assetType = holding.asset_type || "Other";
+    allocationTotals.set(assetType, (allocationTotals.get(assetType) || 0) + Number(holding.value || 0));
+  }
+  const allocation = [...allocationTotals.entries()]
+    .map(([asset_type, value]) => ({
+      asset_type,
+      value,
+      percent: totalValue ? (value / totalValue) * 100 : 0,
+    }))
+    .filter(item => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const hasFilteredHoldings = holdings.length !== (data.holdings || []).length;
+  const history = data.history || [];
+  const latestHistory = history[history.length - 1];
+  const historyMatchesTotal = latestHistory
+    && Math.abs(Number(latestHistory.total_value || 0) - totalValue) < 1;
+
+  return {
+    ...data,
+    accounts,
+    holdings,
+    allocation,
+    total_value: totalValue,
+    history: hasFilteredHoldings || !historyMatchesTotal ? [] : history,
+  };
+}
+
+function renderInvestmentCard(data) {
+  const total = Number(data.total_value || 0);
+  const points = visibleInvestmentSeries(data, total);
+  const width = 820;
+  const height = 150;
+  const left = 18;
+  const right = 18;
+  const top = 14;
+  const bottom = 14;
+  const values = points.map(point => point.total_value);
+  let min = Math.min(...values);
+  let max = Math.max(...values);
+  const spread = max - min;
+  const pad = Math.max(spread * 0.22, Math.abs(max || 1) * 0.008, 1);
+  min -= pad;
+  max += pad;
+  const xFor = (i) => points.length === 1
+    ? left + (width - left - right) / 2
+    : left + (i / (points.length - 1)) * (width - left - right);
+  const yFor = (value) => top + ((max - value) / (max - min)) * (height - top - bottom);
+  const scaled = points.map((point, i) => ({ ...point, x: xFor(i), y: yFor(point.total_value) }));
+  const pathFor = (items) => items
+    .map((point, i) => `${i === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+  const line = pathFor(scaled);
+  const area = `${line} L ${width} ${height - 8} L 0 ${height - 8} Z`;
+  const ranges = ["1W", "1M", "3M", "YTD", "1Y"]
+    .map(range => `<button class="chart-range ${range === investmentChartRange ? "active" : ""}" type="button" data-invest-range="${range}">${range}</button>`)
+    .join("");
+  investCard.innerHTML = `
+    <div class="invest-summary">
+      <div class="invest-change" id="investment-chart-change"></div>
+      <div class="invest-value" id="investment-chart-value"></div>
+      <div class="invest-caption" id="investment-chart-date"></div>
+    </div>
+    <div class="invest-chart">
+      <svg id="investment-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-label="Investment balance chart">
+        <path class="invest-area" d="${area}"></path>
+        <path id="investment-chart-future" class="invest-line future"></path>
+        <path id="investment-chart-active" class="invest-line"></path>
+        <line id="investment-chart-marker" class="invest-marker" x1="0" x2="0" y1="${top}" y2="${height - bottom}"></line>
+        <circle id="investment-chart-dot" class="invest-dot" cx="0" cy="0" r="6"></circle>
+      </svg>
+    </div>
+    <div class="chart-ranges">${ranges}</div>`;
+
+  const svg = document.getElementById("investment-chart");
+  const activeLine = document.getElementById("investment-chart-active");
+  const futureLine = document.getElementById("investment-chart-future");
+  const marker = document.getElementById("investment-chart-marker");
+  const dot = document.getElementById("investment-chart-dot");
+  const valueEl = document.getElementById("investment-chart-value");
+  const changeEl = document.getElementById("investment-chart-change");
+  const dateEl = document.getElementById("investment-chart-date");
+
+  function selectPoint(index) {
+    const selectedIndex = Math.max(0, Math.min(index, scaled.length - 1));
+    const point = scaled[selectedIndex];
+    const firstValue = scaled[0].total_value;
+    const change = point.total_value - firstValue;
+    const pct = firstValue ? (change / firstValue) * 100 : 0;
+    const isDown = change < 0;
+    activeLine.setAttribute("d", pathFor(scaled.slice(0, selectedIndex + 1)));
+    futureLine.setAttribute("d", selectedIndex < scaled.length - 1 ? pathFor(scaled.slice(selectedIndex)) : "");
+    marker.setAttribute("x1", point.x);
+    marker.setAttribute("x2", point.x);
+    dot.setAttribute("cx", point.x);
+    dot.setAttribute("cy", point.y);
+    valueEl.textContent = fmt(point.total_value);
+    changeEl.classList.toggle("down", isDown);
+    changeEl.textContent = `${isDown ? "↘" : "↗"} ${Math.abs(pct).toFixed(2)}%`;
+    dateEl.textContent = fmtDate(point.date);
+  }
+
+  function indexFromClientX(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * width;
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    scaled.forEach((point, i) => {
+      const distance = Math.abs(point.x - x);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    });
+    return bestIndex;
+  }
+
+  let dragging = false;
+  svg.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    svg.setPointerCapture(event.pointerId);
+    selectPoint(indexFromClientX(event.clientX));
+  });
+  svg.addEventListener("pointermove", (event) => {
+    if (dragging || event.pointerType === "mouse") {
+      selectPoint(indexFromClientX(event.clientX));
+    }
+  });
+  svg.addEventListener("pointerup", () => {
+    dragging = false;
+  });
+  svg.addEventListener("pointercancel", () => {
+    dragging = false;
+  });
+  investCard.querySelectorAll("[data-invest-range]").forEach(button => {
+    button.addEventListener("click", () => {
+      investmentChartRange = button.dataset.investRange;
+      renderInvestmentCard(data);
+    });
+  });
+
+  selectPoint(scaled.length - 1);
+}
+
+function renderAllocation(allocation) {
+  if (!allocation.length) return "";
+  return `
+    <div class="section-title"><span>Allocation</span></div>
+    <div class="alloc-card">
+      ${allocation.map(item => `
+        <div class="alloc-row">
+          <div>${escapeHtml(item.asset_type)}</div>
+          <div class="alloc-bar">
+            <div class="alloc-fill" style="width:${Math.max(2, item.percent).toFixed(1)}%"></div>
+          </div>
+          <strong>${item.percent < 1 ? "< 1" : item.percent.toFixed(1)}%</strong>
+        </div>`).join("")}
+    </div>`;
+}
+
+function renderInvestmentAccounts(accounts) {
+  if (!accounts.length) return "";
+  return `
+    <div class="section-title">
+      <span>Accounts</span>
+      <span class="section-subtitle">Invested</span>
+    </div>
+    <div class="invest-list">
+      ${accounts.map(account => `
+        <div class="invest-row account-row">
+          <div class="invest-symbol">${escapeHtml((account.institution || account.source || "INV").slice(0, 3).toUpperCase())}</div>
+          <div class="invest-main">
+            <div class="invest-name">${escapeHtml(account.name || "Investment Account")}${account.mask ? ` <span class="muted">${escapeHtml(account.mask)}</span>` : ""}</div>
+            <div class="invest-sub">${escapeHtml(account.institution || "")} · ${escapeHtml(account.subtype || "investment")}</div>
+          </div>
+          <div class="invest-amount">${fmt(account.current)}</div>
+        </div>`).join("")}
+    </div>`;
+}
+
+function renderSpark(value, index) {
+  const base = Math.max(1, Number(value || 0));
+  const values = Array.from({ length: 8 }, (_, i) =>
+    base * (0.9 + i * 0.012 + Math.sin(i + index) * 0.025)
+  );
+  const down = index % 5 === 4;
+  if (down) values.reverse();
+  return `<svg class="spark ${down ? "down" : ""}" viewBox="0 0 84 30" preserveAspectRatio="none"><path d="${pathFromValues(values, 84, 30, 4)}"></path></svg>`;
+}
+
+function holdingText(value, fallback = "") {
+  if (value == null) return fallback;
+  if (typeof value === "string") return value || fallback;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "object") {
+    return (
+      holdingText(value.symbol?.symbol, "") ||
+      holdingText(value.symbol?.raw_symbol, "") ||
+      holdingText(value.raw_symbol, "") ||
+      holdingText(value.description, "") ||
+      holdingText(value.name, "") ||
+      fallback
+    );
+  }
+  return fallback;
+}
+
+function holdingNameText(value, fallback = "") {
+  if (value == null) return fallback;
+  if (typeof value === "string") return value || fallback;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "object") {
+    return (
+      holdingNameText(value.description, "") ||
+      holdingNameText(value.name, "") ||
+      holdingNameText(value.symbol?.description, "") ||
+      holdingNameText(value.symbol?.symbol, "") ||
+      fallback
+    );
+  }
+  return fallback;
+}
+
+function renderHoldings(holdings) {
+  if (!holdings.length) return "";
+  return `
+    <div class="section-title">
+      <span>Holdings</span>
+      <span class="section-subtitle">My Equity</span>
+    </div>
+    <div class="invest-list">
+      ${holdings.map((holding, index) => {
+        const symbol = holdingText(holding.symbol, "INV");
+        const name = holdingNameText(holding.name, symbol || "Holding");
+        return `
+        <div class="invest-row holding-row">
+          <div class="invest-symbol">${escapeHtml(symbol.slice(0, 5).toUpperCase())}</div>
+          <div class="invest-main">
+            <div class="invest-name">${escapeHtml(name)}</div>
+            <div class="invest-sub">${escapeHtml(holding.asset_type || "Other")} · ${escapeHtml(holding.account_name || holding.institution || "")}</div>
+          </div>
+          ${renderSpark(holding.value, index)}
+          <div class="invest-amount">${fmt(holding.value)}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+function renderInvestments(data) {
+  const displayData = displayInvestmentData(data);
+  const visibleErrors = (data.errors || []).filter(error =>
+    !String(error.error || "").includes("ADDITIONAL_CONSENT_REQUIRED")
+  );
+  renderInvestmentCard(displayData);
+  investOut.innerHTML = [
+    renderInvestmentAccounts(displayData.accounts || []),
+    renderAllocation(displayData.allocation || []),
+    renderHoldings(displayData.holdings || []),
+    visibleErrors.length ? `<pre class="err">${JSON.stringify(visibleErrors, null, 2)}</pre>` : "",
+  ].join("");
+}
+
+async function refreshInvestments(force = false) {
+  const path = force ? "/api/investments?refresh=1" : "/api/investments";
+  const payload = await fetch(path).then(r => r.json());
+  if (payload.error) {
+    investOut.innerHTML = `<pre class="err">${JSON.stringify(payload, null, 2)}</pre>`;
+    return;
+  }
+  investmentsData = payload;
+  renderInvestments(payload);
 }
 
 function renderNetWorthChart(history) {
@@ -511,6 +1151,53 @@ async function addPlaid() {
   handler.open();
 }
 
+async function enablePlaidInvestments() {
+  const itemsPayload = await fetch("/api/plaid/items").then(r => r.json());
+  const items = itemsPayload.items || [];
+  if (!items.length) {
+    out.innerHTML = `<pre class="err">No Plaid connections found.</pre>`;
+    return;
+  }
+
+  let item = items[0];
+  if (items.length > 1) {
+    const menu = items
+      .map((entry, index) => `${index + 1}. ${entry.institution_name || "Plaid item"}`)
+      .join("\n");
+    const choice = prompt(`Pick a Plaid connection to grant Investments consent:\n\n${menu}`, "1");
+    if (choice == null) return;
+    const index = Number(choice) - 1;
+    if (!Number.isInteger(index) || !items[index]) {
+      out.innerHTML = `<pre class="err">Invalid selection.</pre>`;
+      return;
+    }
+    item = items[index];
+  }
+
+  const r = await fetch("/api/create_update_link_token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_id: item.item_id }),
+  });
+  const data = await r.json();
+  if (!data.link_token) {
+    out.innerHTML = `<pre class="err">${JSON.stringify(data, null, 2)}</pre>`;
+    return;
+  }
+
+  const handler = Plaid.create({
+    token: data.link_token,
+    onSuccess: async () => {
+      await refreshInvestments(true);
+      showView("investments");
+    },
+    onExit: (err) => {
+      if (err) out.innerHTML = `<pre class="err">${JSON.stringify(err, null, 2)}</pre>`;
+    },
+  });
+  handler.open();
+}
+
 async function addSnapTrade() {
   const r = await fetch("/api/snaptrade/connect", { method: "POST" });
   const data = await r.json();
@@ -645,9 +1332,11 @@ async function resetAll() {
   if (!confirm("Unlink all accounts locally? (Plaid and SnapTrade connections remain on their side.)")) return;
   await fetch("/api/reset", { method: "POST" });
   transactionsData = [];
+  investmentsData = null;
   txSearch.value = "";
   await refresh();
   if (currentView === "transactions") await refreshTransactions();
+  if (currentView === "investments") await refreshInvestments();
 }
 
 out.addEventListener("click", (event) => {
@@ -674,9 +1363,12 @@ document.addEventListener("click", (event) => {
 
 document.getElementById("add-plaid").onclick = addPlaid;
 document.getElementById("add-snaptrade").onclick = addSnapTrade;
+document.getElementById("plaid-investments").onclick = enablePlaidInvestments;
 document.getElementById("refresh").onclick = () => {
   if (currentView === "transactions") {
     refreshTransactions(true);
+  } else if (currentView === "investments") {
+    refreshInvestments(true);
   } else {
     refresh(true);
   }
@@ -688,6 +1380,7 @@ removeModeBtn.onclick = () => {
 };
 document.getElementById("reset").onclick = resetAll;
 overviewTab.onclick = () => showView("overview");
+investmentsTab.onclick = () => showView("investments");
 transactionsTab.onclick = () => showView("transactions");
 txSearch.addEventListener("input", renderTransactions);
 
