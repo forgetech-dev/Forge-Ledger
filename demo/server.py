@@ -312,6 +312,7 @@ def empty_investments_payload():
         "accounts": [],
         "allocation": [],
         "holdings": [],
+        "buying_power": {"total": 0.0, "items": []},
         "total_value": 0.0,
         "history": [],
         "warnings": [],
@@ -890,6 +891,106 @@ def accounts_from_investable_holdings(accounts, holdings):
     return display_accounts
 
 
+def buying_power_item(
+    source,
+    institution,
+    account_name,
+    value,
+    symbol="CASH",
+    name="Cash",
+    category="investment",
+):
+    return {
+        "source": source,
+        "institution": institution,
+        "account_name": account_name,
+        "symbol": symbol or "CASH",
+        "name": name or "Cash",
+        "value": float(value or 0),
+        "category": category,
+    }
+
+
+def deposit_buying_power_items(balance_payload):
+    items = []
+    for account in (balance_payload.get("groups") or {}).get("deposit", []):
+        value = float(account.get("current") or account.get("available") or 0)
+        if value <= 0:
+            continue
+        items.append(
+            buying_power_item(
+                account.get("source"),
+                account.get("institution"),
+                account.get("name"),
+                value,
+                symbol="CASH",
+                name=account.get("name") or "Deposit cash",
+                category="deposit",
+            )
+        )
+    return items
+
+
+def buying_power_from_holding(holding):
+    return buying_power_item(
+        holding.get("source"),
+        holding.get("institution"),
+        holding.get("account_name"),
+        holding.get("value") or 0,
+        symbol=holding.get("symbol") or "CASH",
+        name=holding.get("name") or "Buying power",
+        category="investment",
+    )
+
+
+def build_buying_power(balance_payload, raw_accounts, invested_accounts, investment_cash_items=None):
+    items = deposit_buying_power_items(balance_payload)
+    investment_cash_items = [
+        item for item in (investment_cash_items or [])
+        if float(item.get("value") or 0) > 0
+    ]
+    items.extend(investment_cash_items)
+
+    cash_item_accounts = {
+        investment_account_match_key(
+            item.get("source"),
+            item.get("institution"),
+            item.get("account_name"),
+        )
+        for item in investment_cash_items
+    }
+    invested_values = investment_account_values(invested_accounts)
+
+    for account in raw_accounts:
+        key = investment_account_match_key(
+            account.get("source"),
+            account.get("institution"),
+            account.get("name"),
+        )
+        if key in cash_item_accounts:
+            continue
+        value = float(account.get("current") or 0) - float(invested_values.get(key) or 0)
+        if value <= 0.01:
+            continue
+        items.append(
+            buying_power_item(
+                account.get("source"),
+                account.get("institution"),
+                account.get("name"),
+                value,
+                symbol="CASH",
+                name="Uninvested cash",
+                category="investment",
+            )
+        )
+
+    items.sort(key=lambda item: float(item.get("value") or 0), reverse=True)
+    return {
+        "total": sum(float(item.get("value") or 0) for item in items),
+        "items": items,
+    }
+
+
 def normalized_investment_payload(payload):
     enriched = _json_clone(payload)
     balance_payload = get_balance_cache() or empty_balance_payload()
@@ -904,6 +1005,10 @@ def normalized_investment_payload(payload):
     }
     raw_account_values = investment_account_values(raw_accounts)
     holdings = []
+    buying_power_items = [
+        item for item in ((enriched.get("buying_power") or {}).get("items") or [])
+        if item.get("category") == "investment"
+    ]
     reconciled_stock_plan_accounts = set()
 
     for holding in enriched.get("holdings") or []:
@@ -921,6 +1026,7 @@ def normalized_investment_payload(payload):
         if is_unvested_stock_grant_holding(account, symbol, name, value, quantity):
             continue
         if is_buying_power_holding(symbol, name, holding.get("asset_type")):
+            buying_power_items.append(buying_power_from_holding(holding))
             continue
         if is_stock_plan_account(account):
             current_value = raw_account_values.get(key, 0.0)
@@ -956,6 +1062,12 @@ def normalized_investment_payload(payload):
     enriched["allocation"] = allocation
     enriched["accounts"] = accounts_from_investable_holdings(raw_accounts, holdings)
     enriched["total_value"] = total_value or float((balance_payload.get("totals") or {}).get("investment") or 0)
+    enriched["buying_power"] = build_buying_power(
+        balance_payload,
+        raw_accounts,
+        enriched["accounts"],
+        buying_power_items,
+    )
     return enriched
 
 
@@ -1047,6 +1159,7 @@ def _pull_plaid_holdings(
     hidden_keys,
     investment_institutions,
     account_values,
+    buying_power_items,
 ):
     reconciled_stock_plan_accounts = set()
     for tok in load_tokens():
@@ -1109,6 +1222,17 @@ def _pull_plaid_holdings(
                     reconciled_stock_plan_accounts.add(holding_account_key)
             asset_type = classify_asset_type(security.get("type"), ticker, name)
             if is_buying_power_holding(ticker, name, asset_type):
+                buying_power_items.append(
+                    buying_power_item(
+                        "plaid",
+                        institution,
+                        account.get("name"),
+                        value,
+                        symbol=ticker,
+                        name=name,
+                        category="investment",
+                    )
+                )
                 continue
             add_allocation(allocation_totals, asset_type, value)
             holdings.append(
@@ -1152,7 +1276,7 @@ def _snaptrade_positions_from_account(account, user):
     return account.get("positions") or account.get("holdings") or []
 
 
-def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys):
+def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys, buying_power_items):
     if not snaptrade:
         return
     user = load_snaptrade_user()
@@ -1183,19 +1307,16 @@ def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys):
             total = balance_obj.get("total") if isinstance(balance_obj, dict) else None
             value = total.get("amount") if isinstance(total, dict) else total
             value = float(value or 0)
-            add_allocation(allocation_totals, "Other", value)
-            holdings.append(
-                {
-                    "symbol": "ACCT",
-                    "name": account.get("name") or inst,
-                    "value": value,
-                    "quantity": None,
-                    "price": None,
-                    "asset_type": "Other",
-                    "institution": inst,
-                    "account_name": account.get("name") or inst,
-                    "source": "snaptrade",
-                }
+            buying_power_items.append(
+                buying_power_item(
+                    "snaptrade",
+                    inst,
+                    account.get("name") or inst,
+                    value,
+                    symbol="CASH",
+                    name="Uninvested cash",
+                    category="investment",
+                )
             )
             continue
 
@@ -1207,6 +1328,17 @@ def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys):
                 continue
             asset_type = classify_asset_type(security_type, symbol, name)
             if is_buying_power_holding(symbol, name, asset_type):
+                buying_power_items.append(
+                    buying_power_item(
+                        "snaptrade",
+                        inst,
+                        account.get("name") or inst,
+                        value,
+                        symbol=symbol,
+                        name=name,
+                        category="investment",
+                    )
+                )
                 continue
             add_allocation(allocation_totals, asset_type, value)
             holdings.append(
@@ -1228,6 +1360,7 @@ def collect_investments():
     balance_payload = get_balance_cache() or empty_balance_payload()
     accounts = investment_account_rows(balance_payload)
     holdings = []
+    buying_power_items = []
     allocation_totals = {}
     errors = []
     warnings = []
@@ -1247,8 +1380,9 @@ def collect_investments():
         hidden_keys,
         plaid_investment_institutions,
         account_values,
+        buying_power_items,
     )
-    _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys)
+    _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys, buying_power_items)
 
     if not holdings:
         for account in accounts:
@@ -1281,11 +1415,18 @@ def collect_investments():
     allocation.sort(key=lambda item: item["value"], reverse=True)
     holdings.sort(key=lambda item: float(item.get("value") or 0), reverse=True)
     accounts = accounts_from_investable_holdings(accounts, holdings)
+    buying_power = build_buying_power(
+        balance_payload,
+        investment_account_rows(balance_payload),
+        accounts,
+        buying_power_items,
+    )
 
     return {
         "accounts": accounts,
         "allocation": allocation,
         "holdings": holdings,
+        "buying_power": buying_power,
         "total_value": total_value or float((balance_payload.get("totals") or {}).get("investment") or 0),
         "warnings": warnings,
         "errors": errors,

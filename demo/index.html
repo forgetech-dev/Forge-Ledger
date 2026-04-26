@@ -121,6 +121,16 @@
     .alloc-fill { height: 100%; border-radius: inherit; background: #18254f; }
     .invest-list { display: grid; gap: 0.7rem; }
     .invest-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.8rem; align-items: center; padding: 0.8rem 0.9rem; border: 1px solid #ececec; border-radius: 16px; background: #fff; }
+    .buying-power { margin: 1.1rem 0; border: 1px solid #ececec; border-radius: 16px; overflow: hidden; background: #fff; }
+    .buying-power summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.75rem; align-items: center; padding: 0.9rem 1rem; cursor: pointer; list-style: none; }
+    .buying-power summary::-webkit-details-marker { display: none; }
+    .buying-power-main { min-width: 0; }
+    .buying-power-title { color: #18254f; font-size: 1rem; font-weight: 850; }
+    .buying-power-sub { margin-top: 0.16rem; color: #9aa1b4; font-size: 0.78rem; }
+    .buying-power-total { color: #18254f; font-size: 1.05rem; font-weight: 850; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .buying-power-chevron { width: 0.55rem; height: 0.55rem; border-right: 2px solid #9aa1b4; border-bottom: 2px solid #9aa1b4; transform: rotate(45deg); transition: transform 0.15s ease; }
+    .buying-power[open] .buying-power-chevron { transform: rotate(225deg); }
+    .buying-power-list { display: grid; gap: 0.55rem; padding: 0 0.8rem 0.8rem; }
     .holding-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
     .invest-symbol { min-width: 3.7rem; padding: 0.45rem 0.55rem; border-radius: 8px; color: #61708a; background: #f5f6f8; text-align: center; font-weight: 850; }
     .invest-main { min-width: 0; }
@@ -710,6 +720,17 @@ function accountsFromInvestableHoldings(accounts, holdings) {
   return displayAccounts.sort((a, b) => Number(b.current || 0) - Number(a.current || 0));
 }
 
+function buyingPowerFromData(data) {
+  const buyingPower = data.buying_power || {};
+  const items = (buyingPower.items || [])
+    .filter(item => Number(item.value || 0) > 0)
+    .sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
+  const total = Number.isFinite(Number(buyingPower.total))
+    ? Number(buyingPower.total)
+    : items.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  return { total, items };
+}
+
 function displayInvestmentData(data) {
   const rawAccounts = data.accounts || [];
   const filteredHoldings = (data.holdings || []).filter(holding =>
@@ -744,6 +765,7 @@ function displayInvestmentData(data) {
     accounts,
     holdings,
     allocation,
+    buying_power: buyingPowerFromData(data),
     total_value: totalValue,
     history: hasFilteredHoldings || !historyMatchesTotal ? [] : history,
   };
@@ -901,6 +923,40 @@ function renderInvestmentAccounts(accounts) {
     </div>`;
 }
 
+function renderBuyingPower(buyingPower) {
+  const items = (buyingPower?.items || []).filter(item => Number(item.value || 0) > 0);
+  const total = Number(buyingPower?.total || 0);
+  if (total <= 0 && !items.length) return "";
+  const countLabel = `${items.length} cash source${items.length === 1 ? "" : "s"}`;
+  return `
+    <details class="buying-power">
+      <summary>
+        <div class="buying-power-main">
+          <div class="buying-power-title">Buying Power</div>
+          <div class="buying-power-sub">${escapeHtml(countLabel)}</div>
+        </div>
+        <div class="buying-power-total">${fmt(total)}</div>
+        <span class="buying-power-chevron"></span>
+      </summary>
+      <div class="buying-power-list">
+      ${items.map(item => {
+        const symbol = holdingText(item.symbol, item.category === "deposit" ? "CASH" : "BP");
+        const name = holdingNameText(item.name, item.category === "deposit" ? "Deposit cash" : "Buying power");
+        const category = item.category === "deposit" ? "Deposit cash" : "Investment cash";
+        return `
+        <div class="invest-row account-row">
+          <div class="invest-symbol">${escapeHtml(symbol.slice(0, 5).toUpperCase())}</div>
+          <div class="invest-main">
+            <div class="invest-name">${escapeHtml(name)}</div>
+            <div class="invest-sub">${escapeHtml(category)} · ${escapeHtml(item.institution || "")}${item.account_name ? ` · ${escapeHtml(item.account_name)}` : ""}</div>
+          </div>
+          <div class="invest-amount">${fmt(item.value)}</div>
+        </div>`;
+      }).join("")}
+      </div>
+    </details>`;
+}
+
 function renderSpark(value, index) {
   const base = Math.max(1, Number(value || 0));
   const values = Array.from({ length: 8 }, (_, i) =>
@@ -976,6 +1032,7 @@ function renderInvestments(data) {
   );
   renderInvestmentCard(displayData);
   investOut.innerHTML = [
+    renderBuyingPower(displayData.buying_power),
     renderInvestmentAccounts(displayData.accounts || []),
     renderAllocation(displayData.allocation || []),
     renderHoldings(displayData.holdings || []),
