@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -52,7 +52,10 @@
       --shadow-lg: 0 18px 42px rgba(20, 31, 56, 0.12);
     }
     * { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
+    html {
+      -webkit-text-size-adjust: 100%;
+      scroll-padding-top: 1rem;
+    }
     body {
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       max-width: 860px;
@@ -60,6 +63,7 @@
       padding: 0 1rem;
       color: var(--fg);
       background: var(--bg);
+      -webkit-tap-highlight-color: transparent;
     }
 
     h1 { margin: 0; font-size: 1.85rem; font-weight: 850; letter-spacing: -0.01em; color: var(--fg); }
@@ -82,6 +86,7 @@
       font-size: 0.88rem;
       font-weight: 750;
       box-shadow: var(--shadow-sm);
+      touch-action: manipulation;
     }
     .actions-menu summary::-webkit-details-marker { display: none; }
     .actions-menu[open] summary { background: var(--surface-soft); }
@@ -242,6 +247,7 @@
       padding: 1rem 1.1rem;
       cursor: pointer;
       list-style: none;
+      touch-action: manipulation;
     }
     .category summary::-webkit-details-marker { display: none; }
     .category[open] summary { border-bottom: 1px solid var(--line); }
@@ -365,6 +371,12 @@
       font-size: 0.98rem;
     }
     .tx-search input::placeholder { color: var(--muted); }
+    .tx-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin: -0.4rem 0 0.85rem;
+    }
 
     .tx-summary {
       margin: 1rem 0 1.1rem;
@@ -397,7 +409,89 @@
       line-height: 1.45;
     }
 
+    .tx-spend-chart {
+      display: flex;
+      justify-content: center;
+      margin: 1rem 0 0.85rem;
+    }
+    .tx-spend-donut {
+      position: relative;
+      width: min(11rem, 45vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px var(--line), var(--shadow-sm);
+      touch-action: none;
+    }
+    .tx-spend-donut::after {
+      content: "";
+      position: absolute;
+      inset: 24%;
+      z-index: 0;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .tx-spend-center {
+      position: absolute;
+      inset: 31%;
+      z-index: 1;
+      display: grid;
+      place-content: center;
+      text-align: center;
+    }
+    .tx-spend-center-label {
+      color: var(--muted);
+      font-size: 0.66rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tx-spend-center-value {
+      margin-top: 0.18rem;
+      color: var(--fg);
+      font-size: 0.98rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+    .tx-spend-tooltip {
+      position: absolute;
+      z-index: 2;
+      left: 50%;
+      top: 50%;
+      max-width: min(12rem, 80vw);
+      padding: 0.35rem 0.55rem;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--r-sm);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: var(--shadow-sm);
+      color: var(--fg);
+      font-size: 0.76rem;
+      font-weight: 800;
+      line-height: 1.25;
+      opacity: 0;
+      pointer-events: none;
+      text-align: center;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.12s ease;
+      white-space: nowrap;
+    }
+    .tx-spend-tooltip.visible { opacity: 1; }
+
     .tx-breakdown { display: grid; gap: 0.5rem; margin-top: 1rem; }
+    .tx-breakdown-group {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface);
+    }
+    .tx-breakdown-group summary {
+      padding: 0.58rem 0.65rem;
+      cursor: pointer;
+      list-style: none;
+      touch-action: manipulation;
+    }
+    .tx-breakdown-group summary::-webkit-details-marker { display: none; }
+    .tx-breakdown-group[open] summary { border-bottom: 1px solid var(--line); }
     .tx-breakdown-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.75rem; align-items: center; }
     .tx-breakdown-label {
       display: flex;
@@ -425,6 +519,47 @@
       background: var(--surface-inset);
     }
     .tx-breakdown-fill { height: 100%; border-radius: inherit; background: var(--trend); }
+    .tx-breakdown-items {
+      display: grid;
+      gap: 0;
+      padding: 0.15rem 0.65rem 0.6rem;
+    }
+    .tx-breakdown-tx {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.52rem 0;
+      border-top: 1px solid var(--line);
+    }
+    .tx-breakdown-tx:first-child { border-top: 0; }
+    .tx-breakdown-tx-name {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--fg);
+      font-size: 0.84rem;
+      font-weight: 750;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tx-breakdown-tx-sub {
+      margin-top: 0.12rem;
+      min-width: 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tx-breakdown-tx-amount {
+      color: var(--fg);
+      font-size: 0.84rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .tx-breakdown-tx-amount.inflow { color: var(--positive); }
 
     .tx-day {
       margin: 1.5rem 0 0.7rem;
@@ -520,34 +655,154 @@
       letter-spacing: 0.06em;
     }
     .alloc-card {
-      padding: 1rem 1.15rem;
+      padding: 1rem 1.05rem;
       border: 1px solid var(--line);
       border-radius: var(--r-md);
       background: var(--surface);
       box-shadow: var(--shadow-sm);
     }
-    .alloc-row {
+    .alloc-layout {
       display: grid;
-      grid-template-columns: minmax(5.5rem, 32%) minmax(3rem, 1fr) auto;
-      gap: 0.75rem;
+      grid-template-columns: 12rem minmax(0, 1fr);
+      gap: 1rem;
       align-items: center;
-      padding: 0.5rem 0;
+    }
+    .alloc-donut {
+      position: relative;
+      width: min(12rem, 42vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px var(--line), var(--shadow-sm);
+    }
+    .alloc-donut::after {
+      content: "";
+      position: absolute;
+      inset: 22%;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .alloc-center {
+      position: absolute;
+      inset: 29%;
+      z-index: 1;
+      display: grid;
+      place-content: center;
+      text-align: center;
+    }
+    .alloc-center-label {
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .alloc-center-value {
+      margin-top: 0.18rem;
       color: var(--fg);
-      font-size: 0.94rem;
-      font-weight: 700;
+      font-size: 1rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
     }
-    .alloc-bar {
-      height: 0.36rem;
-      overflow: hidden;
-      border-radius: var(--r-pill);
-      background: var(--surface-inset);
+    .alloc-legend {
+      display: grid;
+      gap: 0.55rem;
+      min-width: 0;
     }
-    .alloc-fill { height: 100%; border-radius: inherit; background: var(--accent); }
-
-    .invest-list { display: grid; gap: 0.55rem; }
-    .invest-row {
+    .alloc-legend-row {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.55rem;
+      align-items: center;
+      color: var(--fg);
+      font-size: 0.92rem;
+      font-weight: 750;
+    }
+    .alloc-dot {
+      width: 0.72rem;
+      height: 0.72rem;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    }
+    .alloc-legend-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .alloc-legend-value {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.08rem;
+      color: var(--fg);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .alloc-legend-value span {
+      font-size: 0.9rem;
+      font-weight: 850;
+    }
+    .alloc-legend-value strong {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 750;
+    }
+
+    .invest-list { display: grid; gap: 0.55rem; }
+    .account-row { grid-template-columns: 4.8rem minmax(0, 1fr) 7.2rem; }
+    .holding-groups { display: grid; gap: 0.65rem; }
+    .holding-group {
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      overflow: hidden;
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .holding-group summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.9rem 1rem;
+      cursor: pointer;
+      list-style: none;
+      touch-action: manipulation;
+    }
+    .holding-group summary::-webkit-details-marker { display: none; }
+    .holding-group[open] summary { border-bottom: 1px solid var(--line); }
+    .holding-group[open] .category-chevron { transform: rotate(225deg); }
+    .holding-group-main { min-width: 0; }
+    .holding-group-title { display: block; color: var(--fg); font-size: 0.98rem; font-weight: 850; }
+    .holding-group-count {
+      display: block;
+      margin-top: 0.18rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .holding-group-total {
+      color: var(--fg);
+      font-size: 1rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .holding-group-body { display: grid; gap: 0; padding: 0 0.45rem; }
+    .holding-group .holding-row {
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      box-shadow: none;
+      background: transparent;
+      padding: 0.78rem 0.55rem;
+    }
+    .holding-group .holding-row:first-child { border-top: 0; }
+    .invest-row {
+      display: grid;
+      grid-template-columns: 4.8rem minmax(0, 1fr) auto;
       gap: 0.85rem;
       align-items: center;
       padding: 0.85rem 0.95rem;
@@ -556,7 +811,8 @@
       background: var(--surface);
       box-shadow: var(--shadow-sm);
     }
-    .holding-row { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+    .holding-row { grid-template-columns: 4.8rem minmax(0, 1fr) 7.2rem; }
+    .holding-row.with-spark { grid-template-columns: 4.8rem minmax(0, 1fr) 10.4rem 7.2rem; }
 
     .buying-power {
       margin: 1.1rem 0;
@@ -574,6 +830,7 @@
       padding: 1rem 1.1rem;
       cursor: pointer;
       list-style: none;
+      touch-action: manipulation;
     }
     .buying-power summary::-webkit-details-marker { display: none; }
     .buying-power[open] summary { border-bottom: 1px solid var(--line); }
@@ -608,7 +865,8 @@
     .buying-power-list .invest-row:first-child { border-top: 0; }
 
     .invest-symbol {
-      min-width: 3.7rem;
+      width: 4.8rem;
+      min-width: 0;
       padding: 0.5rem 0.6rem;
       border-radius: var(--r-sm);
       color: var(--fg-soft);
@@ -617,6 +875,9 @@
       font-weight: 850;
       font-size: 0.82rem;
       letter-spacing: 0.04em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .invest-main { min-width: 0; }
     .invest-name {
@@ -642,9 +903,49 @@
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
       text-align: right;
+      justify-self: end;
     }
+    .invest-value-stack {
+      display: grid;
+      gap: 0.16rem;
+      justify-items: end;
+      min-width: 7.2rem;
+    }
+    .invest-value-stack .invest-amount { justify-self: end; }
+    .invest-daily-change {
+      color: var(--positive);
+      font-size: 0.78rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+    .invest-daily-change.down { color: var(--negative); }
+    .invest-daily-change.neutral { color: var(--muted); }
 
-    .spark { width: 5.2rem; height: 1.8rem; }
+    .spark-cell {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.55rem;
+      width: 10.4rem;
+      justify-self: end;
+    }
+    .spark-latest {
+      min-width: 4.5rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .spark-wrap {
+      display: block;
+      width: 5.2rem;
+      height: 1.8rem;
+    }
+    .spark { display: block; width: 100%; height: 100%; }
     .spark path {
       fill: none;
       stroke: var(--trend);
@@ -654,52 +955,426 @@
     }
     .spark.down path { stroke: var(--negative); }
 
+    /* Investments toolbar (Export, etc.) */
+    .invest-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin: -0.4rem 0 0.85rem;
+    }
+    .export-btn {
+      min-height: 34px;
+      padding: 0.4rem 0.95rem;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: var(--r-pill);
+      color: var(--fg-soft);
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .export-btn.copied {
+      color: var(--positive);
+      background: var(--positive-soft);
+      border-color: var(--positive);
+    }
+    .export-btn.failed {
+      color: var(--negative);
+      background: var(--negative-soft);
+      border-color: var(--negative-line);
+    }
+
+    /* Market pulse */
+    .market-hero {
+      margin: 1rem 0 1.1rem;
+      padding: 1.15rem 1.2rem;
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .market-hero-top,
+    .market-card-top,
+    .market-section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .market-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.32rem 0.72rem;
+      border-radius: var(--r-pill);
+      background: var(--accent);
+      color: var(--accent-on);
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .market-date {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .market-mood {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 1rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+    .market-score {
+      width: 5.4rem;
+      aspect-ratio: 1;
+      display: grid;
+      place-content: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--trend) var(--score-angle, 0deg), var(--surface-inset) 0deg);
+      box-shadow: inset 0 0 0 1px var(--line), var(--shadow-sm);
+      position: relative;
+    }
+    .market-score::after {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .market-score strong,
+    .market-score span {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .market-score strong {
+      color: var(--fg);
+      font-size: 1.45rem;
+      line-height: 1;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .market-score span {
+      margin-top: 0.16rem;
+      color: var(--muted);
+      font-size: 0.58rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .market-mood-text h2 {
+      margin: 0;
+      font-size: 1.24rem;
+      line-height: 1.1;
+      font-weight: 850;
+    }
+    .market-mood-text p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.38;
+    }
+    .market-strategy {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+      margin-top: 1rem;
+    }
+    .market-strategy-item {
+      padding: 0.62rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      background: var(--surface-soft);
+      min-width: 0;
+    }
+    .market-strategy-label {
+      color: var(--muted);
+      font-size: 0.62rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .market-strategy-value {
+      margin-top: 0.2rem;
+      color: var(--fg);
+      font-size: 0.82rem;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .market-section-title {
+      margin: 1.2rem 0 0.65rem;
+      color: var(--fg);
+      font-weight: 850;
+    }
+    .market-section-title span:last-child {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .market-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+    .market-card {
+      min-width: 0;
+      padding: 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .market-name {
+      color: var(--fg);
+      font-size: 0.9rem;
+      font-weight: 850;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .market-sub {
+      margin-top: 0.16rem;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .market-change {
+      flex: 0 0 auto;
+      padding: 0.24rem 0.55rem;
+      border-radius: var(--r-pill);
+      color: var(--positive);
+      background: var(--positive-soft);
+      font-size: 0.72rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .market-card.down .market-change {
+      color: var(--negative);
+      background: var(--negative-soft);
+    }
+    .market-price {
+      margin-top: 0.75rem;
+      color: var(--fg);
+      font-size: 1.65rem;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      font-variant-numeric: tabular-nums;
+    }
+    .market-spark {
+      display: block;
+      width: 100%;
+      height: 4.2rem;
+      margin-top: 0.65rem;
+    }
+    .market-spark path {
+      fill: none;
+      stroke: var(--trend);
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .market-spark.down path { stroke: var(--negative); }
+    .market-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.38rem;
+      margin-top: 0.55rem;
+    }
+    .market-chip {
+      padding: 0.2rem 0.48rem;
+      border-radius: var(--r-pill);
+      background: var(--surface-inset);
+      color: var(--fg-soft);
+      font-size: 0.66rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .market-card.positive .market-chip.primary,
+    .market-strategy-item.positive { background: var(--positive-soft); color: var(--positive); }
+    .market-card.negative .market-chip.primary,
+    .market-strategy-item.negative { background: var(--negative-soft); color: var(--negative); }
+    .market-card.cautious .market-chip.primary,
+    .market-strategy-item.cautious { background: #fff5dd; color: #996500; }
+    .market-empty {
+      margin: 1.2rem 0;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--r-md);
+      background: var(--surface);
+      color: var(--muted);
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+
     @media (max-width: 640px) {
+      html { scroll-padding-top: calc(7rem + env(safe-area-inset-top)); }
       body {
         max-width: none;
         margin: 0;
-        padding: calc(1rem + env(safe-area-inset-top)) max(0.9rem, env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) max(0.9rem, env(safe-area-inset-left));
+        min-height: 100vh;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        padding: calc(0.75rem + env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) calc(1.35rem + env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
       }
-      h1 { font-size: 1.7rem; line-height: 1.1; }
+      h1 { font-size: 1.45rem; line-height: 1.08; }
       h2 { font-size: 0.98rem; }
-      p.lead { font-size: 0.92rem; line-height: 1.4; margin-bottom: 0.95rem; }
-      .topbar { align-items: flex-start; }
-      .actions-menu summary { min-height: 42px; padding: 0.5rem 0.85rem; }
-      .toolbar { width: min(17rem, calc(100vw - 1.8rem)); }
+      p.lead { display: none; }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        align-items: center;
+        margin: calc(-0.75rem - env(safe-area-inset-top)) -0.75rem 0;
+        padding: calc(0.75rem + env(safe-area-inset-top)) 0.75rem 0.55rem;
+        background: rgba(245, 246, 250, 0.94);
+        border-bottom: 1px solid rgba(217, 221, 230, 0.72);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      .actions-menu summary { min-height: 40px; padding: 0.48rem 0.78rem; box-shadow: none; }
+      .toolbar {
+        position: fixed;
+        top: calc(3.35rem + env(safe-area-inset-top));
+        left: max(0.75rem, env(safe-area-inset-left));
+        right: max(0.75rem, env(safe-area-inset-right));
+        z-index: 40;
+        width: auto;
+        max-height: calc(100dvh - 4.35rem - env(safe-area-inset-top));
+        overflow: auto;
+        overscroll-behavior: contain;
+        border-radius: 18px;
+      }
       .toolbar button { width: 100%; min-height: 44px; padding: 0.6rem 0.7rem; }
-      .institutions { font-size: 0.82rem; line-height: 1.4; margin-bottom: 0.85rem; }
+      .institutions {
+        margin-bottom: 0.85rem;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.35;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .chart, .invest-card {
-        margin: 1rem -0.1rem 1.1rem;
-        padding: 1.1rem 0.95rem 0.9rem;
+        margin: 0.85rem 0 1rem;
+        padding: 0.98rem 0.78rem 0.8rem;
         border-radius: var(--r-lg);
       }
-      .chart-value, .invest-value { font-size: clamp(1.85rem, 8vw, 2.4rem); }
-      .chart-change, .invest-change { margin-top: 0.6rem; }
+      .chart-value, .invest-value { font-size: clamp(1.85rem, 8vw, 2.35rem); }
+      .chart-change, .invest-change { margin-top: 0.55rem; }
       .chart-date, .invest-caption { font-size: 0.74rem; }
-      .chart-body { height: 150px; }
-      .invest-chart { height: 135px; }
+      .chart-body { height: 140px; }
+      .invest-chart { height: 125px; }
       .chart-ranges { justify-content: stretch; gap: 0.2rem; }
       .chart-range { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0.5rem 0.1rem; font-size: 0.84rem; }
-      .view-tabs { margin-top: 0.85rem; }
-      .tx-summary { padding: 1rem 1.05rem; border-radius: var(--r-md); }
+      .view-tabs {
+        position: sticky;
+        top: calc(3.35rem + env(safe-area-inset-top));
+        z-index: 20;
+        margin: 0.75rem 0 0.85rem;
+        box-shadow: 0 10px 22px rgba(20, 31, 56, 0.08);
+      }
+      .view-tab { min-height: 42px; font-size: clamp(0.72rem, 2.7vw, 0.84rem); padding-inline: 0.18rem; }
+      .market-hero { margin-top: 0.85rem; padding: 0.95rem 0.9rem; border-radius: var(--r-md); }
+      .market-mood { grid-template-columns: 4.7rem minmax(0, 1fr); gap: 0.8rem; }
+      .market-score { width: 4.7rem; }
+      .market-score strong { font-size: 1.25rem; }
+      .market-mood-text h2 { font-size: 1.08rem; }
+      .market-mood-text p { font-size: 0.78rem; }
+      .market-strategy { grid-template-columns: 1fr; gap: 0.45rem; }
+      .market-grid { grid-template-columns: 1fr; gap: 0.58rem; }
+      .market-card { padding: 0.82rem; border-radius: var(--r-sm); }
+      .market-price { font-size: 1.42rem; }
+      .market-spark { height: 3.6rem; }
+      .tx-summary { margin-top: 0.85rem; padding: 0.95rem 0.9rem; border-radius: var(--r-md); }
       .tx-summary-value { font-size: 1.65rem; }
-      .tx-search { margin: 1rem 0 1.15rem; padding: 0.75rem 0.95rem; }
-      .tx-row { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding: 0.8rem 0.85rem; }
+      .tx-spend-chart { margin: 0.9rem 0 0.75rem; }
+      .tx-spend-donut { width: min(9.4rem, 48vw); }
+      .tx-spend-center-label { font-size: 0.58rem; }
+      .tx-spend-center-value { font-size: 0.84rem; }
+      .tx-spend-tooltip { font-size: 0.72rem; }
+      .tx-breakdown-label, .tx-breakdown-amount { font-size: 0.82rem; }
+      .tx-breakdown-group summary { padding: 0.55rem 0.58rem; }
+      .tx-breakdown-items { padding: 0.1rem 0.58rem 0.55rem; }
+      .tx-breakdown-tx { gap: 0.55rem; padding: 0.48rem 0; }
+      .tx-breakdown-tx-name, .tx-breakdown-tx-amount { font-size: 0.8rem; }
+      .tx-search { margin: 0.85rem 0 1rem; padding: 0.72rem 0.88rem; }
+      .tx-row { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; padding: 0.78rem 0.82rem; }
       .tx-meta { justify-content: space-between; }
       .tx-pill { max-width: min(11rem, 55vw); }
-      .alloc-row { grid-template-columns: minmax(4.8rem, 30%) minmax(2.5rem, 1fr) auto; gap: 0.55rem; font-size: 0.92rem; }
-      .invest-row, .holding-row { grid-template-columns: auto minmax(0, 1fr); }
+      .alloc-card { padding: 0.85rem; }
+      .alloc-layout {
+        grid-template-columns: minmax(7.5rem, 36%) minmax(0, 1fr);
+        gap: 0.75rem;
+      }
+      .alloc-donut { width: min(8.6rem, 36vw); }
+      .alloc-center-label { font-size: 0.58rem; }
+      .alloc-center-value { font-size: 0.82rem; }
+      .alloc-legend { gap: 0.45rem; }
+      .alloc-legend-row { gap: 0.45rem; font-size: 0.86rem; }
+      .alloc-dot { width: 0.62rem; height: 0.62rem; }
+      .alloc-legend-value span { font-size: 0.82rem; }
+      .alloc-legend-value strong { display: none; }
+      .section-title { margin: 1rem 0 0.55rem; font-size: 1rem; }
+      .buying-power { margin: 0.8rem 0 1rem; border-radius: 14px; }
+      .buying-power summary { padding: 0.78rem 0.82rem; gap: 0.55rem; }
+      .buying-power-total { font-size: 0.98rem; }
+      .buying-power-list { padding: 0 0.55rem 0.55rem; }
+      .buying-power-list .invest-row {
+        grid-template-columns: 3.45rem minmax(0, 1fr) auto;
+        padding: 0.65rem 0;
+      }
+      .invest-row, .holding-row, .holding-row.with-spark {
+        grid-template-columns: 3.45rem minmax(0, 1fr);
+        gap: 0.62rem;
+        padding: 0.72rem 0.75rem;
+        border-radius: 14px;
+      }
+      .invest-symbol { width: 3.45rem; padding: 0.42rem 0.45rem; font-size: 0.8rem; }
+      .invest-name, .tx-name { font-size: 0.95rem; }
+      .invest-sub, .tx-sub { font-size: 0.74rem; }
       .invest-amount { grid-column: 2; text-align: left; color: var(--positive); }
-      .spark { display: none; }
+      .invest-value-stack {
+        grid-column: 2;
+        justify-items: start;
+        min-width: 0;
+      }
+      .invest-value-stack .invest-amount {
+        grid-column: auto;
+        justify-self: start;
+        color: var(--fg);
+        text-align: left;
+      }
+      .buying-power-list .invest-amount { grid-column: auto; text-align: right; color: var(--fg); }
+      .holding-group summary { padding: 0.78rem 0.82rem; gap: 0.55rem; }
+      .holding-group-title { font-size: 0.96rem; }
+      .holding-group-total { font-size: 0.96rem; }
+      .holding-group-body { padding: 0 0.55rem 0.55rem; }
+      .holding-group .holding-row { padding: 0.65rem 0; }
+      .spark-cell, .spark-wrap, .spark { display: none; }
       .category { margin: 0.7rem 0; }
-      .category summary { padding: 0.85rem 0.9rem; grid-template-columns: minmax(0, 1fr) auto auto; }
-      .category-body { padding: 0.25rem 0.7rem 0.7rem; }
+      .category summary { padding: 0.8rem 0.82rem; grid-template-columns: minmax(0, 1fr) auto auto; }
+      .category-body { padding: 0.2rem 0.55rem 0.65rem; }
       table, tbody { display: block; width: 100%; }
       thead { display: none; }
       tr {
         display: block;
         margin: 0.65rem 0;
-        padding: 0.85rem 0.9rem;
+        padding: 0.78rem 0.82rem;
         border: 1px solid var(--line);
         border-radius: var(--r-sm);
         background: var(--surface);
@@ -708,10 +1383,10 @@
       th, td { border-bottom: 0; }
       td {
         display: grid;
-        grid-template-columns: minmax(5.5rem, 34%) minmax(0, 1fr);
-        gap: 0.75rem;
+        grid-template-columns: minmax(4.75rem, 32%) minmax(0, 1fr);
+        gap: 0.6rem;
         align-items: start;
-        padding: 0.3rem 0;
+        padding: 0.28rem 0;
         overflow-wrap: anywhere;
       }
       td::before {
@@ -742,7 +1417,16 @@
       .networth .amount { font-size: 1.5rem; }
     }
     @media (max-width: 370px) {
-      .toolbar { width: calc(100vw - 1.8rem); }
+      .toolbar { width: auto; }
+      .alloc-layout { grid-template-columns: 1fr; justify-items: center; }
+      .alloc-donut { width: min(10rem, 58vw); }
+      .alloc-legend { width: 100%; }
+      .view-tab { font-size: 0.8rem; padding-inline: 0.2rem; }
+      .invest-symbol { width: 3.1rem; font-size: 0.76rem; }
+      .buying-power summary { grid-template-columns: minmax(0, 1fr) auto; }
+      .buying-power-chevron { display: none; }
+      .holding-group summary { grid-template-columns: minmax(0, 1fr) auto; }
+      .holding-group .category-chevron { display: none; }
     }
   </style>
 </head>
@@ -766,6 +1450,7 @@
     <button class="view-tab active" id="overview-tab" type="button">Overview</button>
     <button class="view-tab" id="investments-tab" type="button">Investments</button>
     <button class="view-tab" id="transactions-tab" type="button">Transactions</button>
+    <button class="view-tab" id="market-tab" type="button">Market</button>
   </nav>
   <section class="view" id="overview-view">
     <section class="chart" id="chart"></section>
@@ -774,6 +1459,9 @@
   </section>
   <section class="view" id="transactions-view" hidden>
     <section class="tx-summary" id="tx-summary"></section>
+    <div class="tx-actions">
+      <button class="export-btn" id="export-transactions" type="button" title="Copy a Markdown transaction summary to your clipboard for AI analysis">Export</button>
+    </div>
     <label class="tx-search">
       <span class="tx-search-icon">⌕</span>
       <input id="tx-search" type="search" placeholder="Search" autocomplete="off" />
@@ -782,7 +1470,14 @@
   </section>
   <section class="view" id="investments-view" hidden>
     <section class="invest-card" id="invest-card"></section>
+    <div class="invest-actions">
+      <button class="export-btn" id="export-portfolio" type="button" title="Copy a Markdown portfolio summary to your clipboard for AI analysis">Export</button>
+    </div>
     <div id="invest-out"></div>
+  </section>
+  <section class="view" id="market-view" hidden>
+    <section class="market-hero" id="market-hero"></section>
+    <div id="market-out"></div>
   </section>
 
 <script>
@@ -794,14 +1489,19 @@ const removeModeBtn = document.getElementById("remove-mode");
 const overviewView = document.getElementById("overview-view");
 const transactionsView = document.getElementById("transactions-view");
 const investmentsView = document.getElementById("investments-view");
+const marketView = document.getElementById("market-view");
 const overviewTab = document.getElementById("overview-tab");
 const investmentsTab = document.getElementById("investments-tab");
 const transactionsTab = document.getElementById("transactions-tab");
+const marketTab = document.getElementById("market-tab");
 const txSummary = document.getElementById("tx-summary");
 const txSearch = document.getElementById("tx-search");
 const txOut = document.getElementById("tx-out");
+const exportTransactionsBtn = document.getElementById("export-transactions");
 const investCard = document.getElementById("invest-card");
 const investOut = document.getElementById("invest-out");
+const marketHero = document.getElementById("market-hero");
+const marketOut = document.getElementById("market-out");
 let removeMode = false;
 let chartRange = "1M";
 let investmentChartRange = "1M";
@@ -810,6 +1510,7 @@ let openCategories = new Set();
 let currentView = "overview";
 let transactionsData = [];
 let investmentsData = null;
+let marketPulseData = null;
 
 function fmt(n) {
   if (n == null || Number.isNaN(Number(n))) return "—";
@@ -899,7 +1600,49 @@ function isInternalPayment(tx) {
   );
 }
 
+const spendingCategories = {
+  "Household": { emoji: "🏠", color: "#f06b2f" },
+  "Other": { emoji: "🤷", color: "#343844" },
+  "Entertainment": { emoji: "🎟️", color: "#38a93a" },
+  "Groceries": { emoji: "🥑", color: "#52bb43" },
+  "Restaurants": { emoji: "🍔", color: "#8b21e8" },
+  "Food & Drink": { emoji: "🍷", color: "#9b59b6" },
+  "Car": { emoji: "🚗", color: "#49b7ad" },
+  "Subscriptions": { emoji: "💳", color: "#d82ec6" },
+  "Shops": { emoji: "🛍️", color: "#d91f2a" },
+  "Insurance": { emoji: "☂️", color: "#c1ba28" },
+  "Loans": { emoji: "💰", color: "#4324e8" },
+  "Personal Care": { emoji: "✂️", color: "#8c9d24" },
+  "Travel & Vacation": { emoji: "🏖️", color: "#c6a227" },
+  "Work Expenses": { emoji: "💼", color: "#b77a2c" },
+};
+const spendingCategoryOrder = Object.keys(spendingCategories);
+
+function spendingCategoryForTx(tx) {
+  const detailed = displayCategory(tx.category).toLowerCase();
+  const primary = String(tx.category_primary || "").toLowerCase();
+  const plaidDetailed = String(tx.category_detailed || "").toLowerCase();
+  const name = String(tx.name || "").toLowerCase();
+  const text = [detailed, primary, plaidDetailed, name].join(" ");
+
+  if (text.includes("rent") || text.includes("mortgage") || text.includes("utilities") || text.includes("home")) return "Household";
+  if (text.includes("insurance")) return "Insurance";
+  if (text.includes("loan")) return "Loans";
+  if (text.includes("flight") || text.includes("hotel") || text.includes("travel") || text.includes("vacation")) return "Travel & Vacation";
+  if (text.includes("transport") || text.includes("parking") || text.includes("gas") || text.includes("fuel") || text.includes("taxi") || text.includes("rideshare") || text.includes("uber") || text.includes("lyft") || text.includes("car")) return "Car";
+  if (text.includes("spotify") || text.includes("netflix") || text.includes("hulu") || text.includes("youtube") || text.includes("subscription") || text.includes("recurring") || text.includes("apple.com/bill") || text.includes("anthropic") || text.includes("claude") || text.includes("openai") || text.includes("adobe") || text.includes("github") || text.includes("music and audio")) return "Subscriptions";
+  if (text.includes("grocery") || text.includes("groceries") || text.includes("supermarket")) return "Groceries";
+  if (text.includes("restaurant") || text.includes("dining") || text.includes("fast food") || text.includes("coffee") || text.includes("cafe")) return "Restaurants";
+  if (text.includes("food") || text.includes("beer") || text.includes("wine") || text.includes("liquor")) return "Food & Drink";
+  if (text.includes("shop") || text.includes("shopping") || text.includes("merchandise") || text.includes("superstore") || text.includes("costco") || text.includes("amazon") || text.includes("target") || text.includes("walmart")) return "Shops";
+  if (text.includes("entertainment") || text.includes("sporting") || text.includes("amusement") || text.includes("museum") || text.includes("movie")) return "Entertainment";
+  if (text.includes("personal care") || text.includes("hair") || text.includes("spa") || text.includes("salon")) return "Personal Care";
+  if (text.includes("office") || text.includes("business") || text.includes("work expense")) return "Work Expenses";
+  return "Other";
+}
+
 function categoryColor(category) {
+  if (spendingCategories[category]) return spendingCategories[category].color;
   const colors = ["#52bb43", "#8b35dd", "#1d72b8", "#b56b0a", "#d84b8a", "#61708a"];
   let hash = 0;
   for (const char of displayCategory(category)) hash = (hash + char.charCodeAt(0)) % colors.length;
@@ -907,6 +1650,7 @@ function categoryColor(category) {
 }
 
 function categoryEmoji(category) {
+  if (spendingCategories[category]) return spendingCategories[category].emoji;
   const c = displayCategory(category).toLowerCase();
   if (c.includes("restaurant") || c.includes("food") || c.includes("dining")) return "🍔";
   if (c.includes("grocery")) return "🥑";
@@ -941,7 +1685,22 @@ function displayCategory(category) {
   return c;
 }
 
-function renderMonthlySpendSummary() {
+function isManshiRentReimbursement(tx) {
+  const name = String(tx.name || "").toLowerCase();
+  return Number(tx.amount || 0) < 0 && name.includes("manshi");
+}
+
+function sortSpendingBreakdown(items) {
+  return items.sort((a, b) => {
+    const aIndex = spendingCategoryOrder.indexOf(a.category);
+    const bIndex = spendingCategoryOrder.indexOf(b.category);
+    const left = aIndex === -1 ? spendingCategoryOrder.length : aIndex;
+    const right = bIndex === -1 ? spendingCategoryOrder.length : bIndex;
+    return left - right || b.amount - a.amount;
+  });
+}
+
+function monthlySpendingData() {
   const monthTransactions = transactionsData.filter(tx => isThisMonth(tx.date));
   const spending = monthTransactions.filter(tx =>
     Number(tx.amount) > 0 && !isInternalPayment(tx)
@@ -949,51 +1708,198 @@ function renderMonthlySpendSummary() {
   const excluded = monthTransactions.filter(tx =>
     Number(tx.amount) > 0 && isInternalPayment(tx)
   );
-  const total = spending.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const categoryTotals = new Map();
+  const categories = new Map();
   for (const tx of spending) {
-    const category = displayCategory(tx.category);
-    categoryTotals.set(category, (categoryTotals.get(category) || 0) + Number(tx.amount || 0));
+    const category = spendingCategoryForTx(tx);
+    if (!categories.has(category)) categories.set(category, { category, amount: 0, transactions: [] });
+    const item = categories.get(category);
+    item.amount += Number(tx.amount || 0);
+    item.transactions.push(tx);
   }
-  const sortedCategories = [...categoryTotals.entries()]
-    .map(([category, amount]) => ({ category, amount }))
-    .sort((a, b) => b.amount - a.amount);
-  const mainCategories = sortedCategories.slice(0, 8);
-  const otherTotal = sortedCategories
-    .slice(8)
-    .reduce((sum, item) => sum + item.amount, 0);
-  const breakdown = otherTotal > 0
-    ? [...mainCategories, { category: "Other", amount: otherTotal }]
-    : mainCategories;
+
+  const reimbursements = monthTransactions
+    .filter(isManshiRentReimbursement)
+    .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  const reimbursementTotal = reimbursements.reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0);
+  const adjustments = [];
+  if (reimbursementTotal > 0 && categories.has("Household")) {
+    const household = categories.get("Household");
+    const applied = Math.min(household.amount, reimbursementTotal);
+    household.amount -= applied;
+    household.transactions.push({
+      adjustment: true,
+      date: reimbursements[0]?.date || "",
+      name: "Manshi rent reimbursement",
+      amount: -applied,
+      category: "Rent reimbursement",
+      institution: "Zelle",
+      account_name: "Shared rent",
+    });
+    adjustments.push({
+      name: "Manshi rent reimbursement",
+      category: "Household",
+      amount: applied,
+      source_count: reimbursements.length,
+    });
+  }
+
+  const breakdown = sortSpendingBreakdown(
+    [...categories.values()]
+      .filter(item => item.amount > 0.01)
+      .map(item => ({
+        ...item,
+        transactions: item.transactions
+          .slice()
+          .sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))),
+      }))
+  );
+  const total = breakdown.reduce((sum, item) => sum + item.amount, 0);
+  return { monthTransactions, spending, excluded, adjustments, total, breakdown };
+}
+
+function setupSpendDonutInteractions() {
+  const donut = txSummary.querySelector(".tx-spend-donut");
+  if (!donut) return;
+  const tooltip = donut.querySelector(".tx-spend-tooltip");
+  let segments = [];
+  try {
+    segments = JSON.parse(donut.dataset.segments || "[]");
+  } catch {
+    segments = [];
+  }
+  if (!tooltip || !segments.length) return;
+
+  function segmentFromPoint(clientX, clientY) {
+    const rect = donut.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const angle = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+    const pct = angle / 3.6;
+    return segments.find(segment => pct >= segment.start && pct <= segment.end) || segments[segments.length - 1];
+  }
+
+  function showTooltip(event) {
+    const segment = segmentFromPoint(event.clientX, event.clientY);
+    if (!segment) return;
+    const rect = donut.getBoundingClientRect();
+    const x = Math.min(Math.max(event.clientX - rect.left, 16), rect.width - 16);
+    const y = Math.min(Math.max(event.clientY - rect.top, 16), rect.height - 16);
+    const percent = Number(segment.percent || 0).toFixed(1);
+    tooltip.textContent = `${categoryEmoji(segment.category)} ${segment.category}: ${fmt(segment.amount)} (${percent}%)`;
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+    tooltip.classList.add("visible");
+  }
+
+  function hideTooltip() {
+    tooltip.classList.remove("visible");
+  }
+
+  donut.addEventListener("pointerdown", (event) => {
+    donut.setPointerCapture?.(event.pointerId);
+    showTooltip(event);
+  });
+  donut.addEventListener("pointermove", showTooltip);
+  donut.addEventListener("pointerleave", (event) => {
+    if (event.pointerType === "mouse") hideTooltip();
+  });
+  donut.addEventListener("pointercancel", hideTooltip);
+  donut.addEventListener("blur", hideTooltip);
+}
+
+function renderMonthlySpendSummary() {
+  const { spending, excluded, adjustments, total, breakdown } = monthlySpendingData();
+  const spendChartHtml = breakdown.length && total > 0
+    ? (() => {
+        let cursor = 0;
+        const segments = [];
+        const gradient = breakdown.map(({ category, amount }, index) => {
+          const start = cursor;
+          const end = index === breakdown.length - 1 ? 100 : cursor + (amount / total) * 100;
+          cursor = end;
+          segments.push({
+            category,
+            amount,
+            percent: (amount / total) * 100,
+            start,
+            end,
+          });
+          return `${categoryColor(category)} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+        }).join(", ");
+        return `
+          <div class="tx-spend-chart">
+            <div class="tx-spend-donut" style="background: conic-gradient(${gradient});" role="img" aria-label="Monthly spending by category" tabindex="0" data-segments="${escapeHtml(JSON.stringify(segments))}">
+              <div class="tx-spend-center">
+                <div class="tx-spend-center-label">Spent</div>
+                <div class="tx-spend-center-value">${fmtShort(total)}</div>
+              </div>
+              <div class="tx-spend-tooltip"></div>
+            </div>
+          </div>`;
+      })()
+    : "";
   const breakdownHtml = breakdown.length
     ? `<div class="tx-breakdown">
-        ${breakdown.map(({ category, amount }) => {
+        ${breakdown.map(({ category, amount, transactions }) => {
           const pct = total ? Math.max(2, (amount / total) * 100) : 0;
           const color = categoryColor(category);
+          const txList = (transactions || []).map(tx => {
+            const account = [tx.institution, tx.account_name].filter(Boolean).join(" &middot; ");
+            const detailedCategory = displayCategory(tx.category);
+            const originalCategory = tx.adjustment ? "Rent reimbursement" : detailedCategory !== category ? detailedCategory : "";
+            const meta = [
+              tx.date ? fmtDate(tx.date) : "",
+              account,
+              originalCategory,
+            ].filter(Boolean).map(escapeHtml).join(" &middot; ");
+            const isAdjustment = Boolean(tx.adjustment);
+            const amount = `${isAdjustment ? "-" : ""}${fmt(Math.abs(Number(tx.amount) || 0))}`;
+            return `
+              <div class="tx-breakdown-tx">
+                <div>
+                  <div class="tx-breakdown-tx-name">${escapeHtml(tx.name || "Transaction")}</div>
+                  <div class="tx-breakdown-tx-sub">${meta}</div>
+                </div>
+                <div class="tx-breakdown-tx-amount ${isAdjustment ? "inflow" : ""}">${amount}</div>
+              </div>`;
+          }).join("");
           return `
-            <div class="tx-breakdown-row">
-              <div class="tx-breakdown-label">
-                <span class="tx-breakdown-dot" style="background:${color}"></span>
-                <span class="tx-breakdown-name">${categoryEmoji(category)} ${escapeHtml(category)}</span>
-              </div>
-              <div class="tx-breakdown-amount">${fmt(amount)}</div>
-              <div class="tx-breakdown-bar">
-                <div class="tx-breakdown-fill" style="width:${pct.toFixed(1)}%; background:${color}"></div>
-              </div>
-            </div>`;
+            <details class="tx-breakdown-group">
+              <summary>
+                <div class="tx-breakdown-row">
+                  <div class="tx-breakdown-label">
+                    <span class="tx-breakdown-dot" style="background:${color}"></span>
+                    <span class="tx-breakdown-name">${categoryEmoji(category)} ${escapeHtml(category)}</span>
+                  </div>
+                  <div class="tx-breakdown-amount">${fmt(amount)}</div>
+                  <div class="tx-breakdown-bar">
+                    <div class="tx-breakdown-fill" style="width:${pct.toFixed(1)}%; background:${color}"></div>
+                  </div>
+                </div>
+              </summary>
+              <div class="tx-breakdown-items">${txList}</div>
+            </details>`;
         }).join("")}
       </div>`
     : "";
   const now = new Date();
   const monthName = now.toLocaleDateString(undefined, { month: "long" });
+  const adjustmentNote = adjustments.length
+    ? ` Manshi rent reimbursement ${fmt(adjustments.reduce((sum, item) => sum + item.amount, 0))} subtracted from Household.`
+    : "";
   txSummary.innerHTML = `
     <div class="tx-summary-label">${escapeHtml(monthName)} spending</div>
     <div class="tx-summary-value">${fmt(total)}</div>
     <div class="tx-summary-note">
       ${spending.length} spending transaction${spending.length === 1 ? "" : "s"} counted.
       ${excluded.length} transfer/payment transaction${excluded.length === 1 ? "" : "s"} excluded to avoid double counting card payments.
+      ${adjustmentNote}
     </div>
+    ${spendChartHtml}
     ${breakdownHtml}`;
+  setupSpendDonutInteractions();
 }
 
 function renderTransactions() {
@@ -1064,14 +1970,18 @@ function showView(view) {
   currentView = view;
   const showTransactions = view === "transactions";
   const showInvestments = view === "investments";
-  overviewView.hidden = showTransactions || showInvestments;
+  const showMarket = view === "market";
+  overviewView.hidden = showTransactions || showInvestments || showMarket;
   transactionsView.hidden = !showTransactions;
   investmentsView.hidden = !showInvestments;
+  marketView.hidden = !showMarket;
   overviewTab.classList.toggle("active", view === "overview");
   investmentsTab.classList.toggle("active", showInvestments);
   transactionsTab.classList.toggle("active", showTransactions);
+  marketTab.classList.toggle("active", showMarket);
   if (showTransactions && transactionsData.length === 0) refreshTransactions();
   if (showInvestments && !investmentsData) refreshInvestments();
+  if (showMarket && !marketPulseData) refreshMarketPulse();
 }
 
 function scaledPointsFromValues(values, width, height, pad = 10) {
@@ -1183,6 +2093,23 @@ function isStockPlanAccount(row) {
   return text.includes("stock plan");
 }
 
+function reconciledStockPlanPosition(value, price, fallbackQuantity) {
+  const currentValue = Number(value || 0);
+  const brokerPrice = Number(price || 0);
+  if (currentValue > 0 && brokerPrice > 0) {
+    const quantity = currentValue / brokerPrice;
+    const roundedQuantity = Math.round(quantity);
+    if (roundedQuantity > 0) {
+      return {
+        quantity: roundedQuantity,
+        price: currentValue / roundedQuantity,
+      };
+    }
+    return { quantity, price: brokerPrice };
+  }
+  return { quantity: fallbackQuantity, price: brokerPrice > 0 ? brokerPrice : null };
+}
+
 function reconcileStockPlanHoldings(accounts, holdings) {
   const accountValues = new Map();
   for (const account of accounts) {
@@ -1197,7 +2124,13 @@ function reconcileStockPlanHoldings(accounts, holdings) {
     if (!accountValue) return [holding];
     if (used.has(key)) return [];
     used.add(key);
-    return [{ ...holding, value: accountValue }];
+    const position = reconciledStockPlanPosition(accountValue, holding.price, holding.quantity);
+    return [{
+      ...holding,
+      value: accountValue,
+      quantity: position.quantity,
+      price: position.price || holding.price,
+    }];
   });
 }
 
@@ -1248,6 +2181,84 @@ function buyingPowerFromData(data) {
   return { total, items };
 }
 
+function normalizedHoldingSymbol(holding) {
+  return holdingText(holding?.symbol, "").trim().toUpperCase();
+}
+
+function mergeHoldingsBySymbol(holdings) {
+  const groups = new Map();
+  for (const holding of holdings) {
+    const symbol = normalizedHoldingSymbol(holding);
+    const account = holding?.account_name || holding?.institution || "";
+    const institution = holding?.institution || "";
+    const key = symbol || [
+      holdingNameText(holding?.name, "Holding"),
+      account,
+      institution,
+    ].join("|").trim().toUpperCase();
+    const value = Number(holding?.value || 0);
+    const quantity = Number(holding?.quantity);
+    const price = Number(holding?.price);
+    const assetType = holding?.asset_type || "Other";
+    const name = holdingNameText(holding?.name, symbol || "Holding");
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        ...holding,
+        symbol: symbol || holding?.symbol || "INV",
+        name,
+        value: 0,
+        quantity: 0,
+        price: Number.isFinite(price) ? price : null,
+        accountNames: new Set(),
+        institutions: new Set(),
+        assetTypes: new Set(),
+        count: 0,
+      });
+    }
+
+    const group = groups.get(key);
+    group.value += value;
+    group.count += 1;
+    if (Number.isFinite(quantity)) group.quantity += quantity;
+    if (Number.isFinite(price) && price > 0 && !(Number.isFinite(group.price) && group.price > 0)) {
+      group.price = price;
+    }
+    if (account) group.accountNames.add(account);
+    if (institution) group.institutions.add(institution);
+    if (assetType) group.assetTypes.add(assetType);
+    if ((!Array.isArray(group.sparkline) || !group.sparkline.length) && Array.isArray(holding?.sparkline)) {
+      group.sparkline = holding.sparkline;
+    }
+    if (name && (!group.name || name.length < String(group.name).length)) group.name = name;
+  }
+
+  return [...groups.values()].map(group => {
+    const accounts = [...group.accountNames];
+    const institutions = [...group.institutions];
+    const assetTypes = [...group.assetTypes];
+    const quantity = group.quantity > 0 ? group.quantity : group.quantity || null;
+    const brokerPrice = Number(group.price);
+    const fallbackPrice = quantity ? group.value / quantity : null;
+    const displayPrice = Number.isFinite(brokerPrice) && brokerPrice > 0
+      ? brokerPrice
+      : fallbackPrice;
+    return {
+      ...group,
+      accountNames: undefined,
+      institutions: undefined,
+      assetTypes: undefined,
+      count: undefined,
+      quantity,
+      price: Number.isFinite(displayPrice) ? displayPrice : null,
+      account_name: accounts.length > 1 ? `${accounts.length} accounts` : (accounts[0] || group.account_name || ""),
+      institution: institutions.length > 1 ? "Multiple institutions" : (institutions[0] || group.institution || ""),
+      asset_type: assetTypes.length > 1 ? "Mixed" : (assetTypes[0] || group.asset_type || "Other"),
+      merged_count: group.count,
+    };
+  }).sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
+}
+
 function displayInvestmentData(data) {
   const rawAccounts = data.accounts || [];
   const filteredHoldings = (data.holdings || []).filter(holding =>
@@ -1280,7 +2291,7 @@ function displayInvestmentData(data) {
   return {
     ...data,
     accounts,
-    holdings,
+    holdings: mergeHoldingsBySymbol(holdings),
     allocation,
     buying_power: buyingPowerFromData(data),
     total_value: totalValue,
@@ -1406,17 +2417,37 @@ function renderInvestmentCard(data) {
 
 function renderAllocation(allocation) {
   if (!allocation.length) return "";
+  const colors = ["#18254f", "#52bb43", "#1d72b8", "#8b35dd", "#b56b0a", "#c63d3a", "#8f96aa"];
+  const total = allocation.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  let cursor = 0;
+  const gradient = allocation.map((item, index) => {
+    const start = cursor;
+    const end = index === allocation.length - 1 ? 100 : cursor + Math.max(0, Number(item.percent || 0));
+    cursor = end;
+    return `${colors[index % colors.length]} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+  }).join(", ");
   return `
     <div class="section-title"><span>Allocation</span></div>
     <div class="alloc-card">
-      ${allocation.map(item => `
-        <div class="alloc-row">
-          <div>${escapeHtml(item.asset_type)}</div>
-          <div class="alloc-bar">
-            <div class="alloc-fill" style="width:${Math.max(2, item.percent).toFixed(1)}%"></div>
+      <div class="alloc-layout">
+        <div class="alloc-donut" style="background: conic-gradient(${gradient});" role="img" aria-label="Portfolio allocation by asset type">
+          <div class="alloc-center">
+            <div class="alloc-center-label">Invested</div>
+            <div class="alloc-center-value">${fmtShort(total)}</div>
           </div>
-          <strong>${item.percent < 1 ? "< 1" : item.percent.toFixed(1)}%</strong>
-        </div>`).join("")}
+        </div>
+        <div class="alloc-legend">
+          ${allocation.map((item, index) => `
+            <div class="alloc-legend-row">
+              <span class="alloc-dot" style="background:${colors[index % colors.length]}"></span>
+              <span class="alloc-legend-name">${escapeHtml(item.asset_type)}</span>
+              <span class="alloc-legend-value">
+                <span>${item.percent < 1 ? "< 1" : item.percent.toFixed(1)}%</span>
+                <strong>${fmt(item.value)}</strong>
+              </span>
+            </div>`).join("")}
+        </div>
+      </div>
     </div>`;
 }
 
@@ -1474,14 +2505,79 @@ function renderBuyingPower(buyingPower) {
     </details>`;
 }
 
-function renderSpark(value, index) {
-  const base = Math.max(1, Number(value || 0));
-  const values = Array.from({ length: 8 }, (_, i) =>
-    base * (0.9 + i * 0.012 + Math.sin(i + index) * 0.025)
+function sparkPointValue(point) {
+  return Number(
+    typeof point === "number"
+      ? point
+      : point?.price ?? point?.close ?? point?.value ?? point?.market_value
   );
-  const down = index % 5 === 4;
-  if (down) values.reverse();
-  return `<svg class="spark ${down ? "down" : ""}" viewBox="0 0 84 30" preserveAspectRatio="none"><path d="${pathFromValues(values, 84, 30, 4)}"></path></svg>`;
+}
+
+function holdingSparkPoints(holding) {
+  const series = holding?.sparkline || holding?.price_history || holding?.priceHistory || holding?.history || holding?.prices;
+  if (!Array.isArray(series)) return [];
+  return series
+    .map(point => ({
+      value: sparkPointValue(point),
+    }))
+    .filter(point => Number.isFinite(point.value));
+}
+
+function renderSpark(holding) {
+  const points = holdingSparkPoints(holding);
+  const values = points.map(point => point.value);
+  if (values.length < 2) return "";
+  const latest = values[values.length - 1];
+  const first = values[0];
+  const down = latest < first;
+  const latestLabel = escapeHtml(`Holding one-day price history. Latest price ${fmt(latest)} per share.`);
+  return `
+    <span class="spark-cell" role="img" aria-label="${latestLabel}">
+      <span class="spark-latest">${fmt(latest)}</span>
+      <span class="spark-wrap">
+        <svg class="spark ${down ? "down" : ""}" viewBox="0 0 84 30" preserveAspectRatio="none" aria-hidden="true">
+          <path d="${pathFromValues(values, 84, 30, 4)}"></path>
+        </svg>
+      </span>
+    </span>`;
+}
+
+function holdingDailyChange(holding) {
+  const values = holdingSparkPoints(holding).map(point => point.value);
+  if (values.length < 2) return null;
+  const first = values[0];
+  const latest = values[values.length - 1];
+  if (!Number.isFinite(first) || !Number.isFinite(latest) || first <= 0 || latest <= 0) return null;
+  const priceChange = latest - first;
+  const percent = (priceChange / first) * 100;
+  const quantity = Number(holding.quantity);
+  const currentValue = Number(holding.value);
+  let amount = null;
+  if (Number.isFinite(quantity) && quantity !== 0) {
+    amount = priceChange * quantity;
+  } else if (Number.isFinite(currentValue) && latest !== 0) {
+    amount = currentValue * (priceChange / latest);
+  }
+  if (!Number.isFinite(amount)) return null;
+  return { amount, percent };
+}
+
+function renderHoldingValue(holding) {
+  const daily = holdingDailyChange(holding);
+  if (!daily) {
+    return `<div class="invest-value-stack"><div class="invest-amount">${fmt(holding.value)}</div></div>`;
+  }
+  const down = daily.amount < 0;
+  const neutral = Math.abs(daily.amount) < 0.005;
+  const sign = daily.amount > 0 ? "+" : daily.amount < 0 ? "-" : "";
+  const percentSign = daily.percent > 0 ? "+" : daily.percent < 0 ? "-" : "";
+  return `
+    <div class="invest-value-stack">
+      <div class="invest-amount">${fmt(holding.value)}</div>
+      <div class="invest-daily-change ${down ? "down" : neutral ? "neutral" : ""}">
+        ${sign}${fmt(Math.abs(daily.amount))} (${percentSign}${Math.abs(daily.percent).toFixed(2)}%)
+      </div>
+    </div>`;
 }
 
 function holdingText(value, fallback = "") {
@@ -1517,6 +2613,92 @@ function holdingNameText(value, fallback = "") {
   return fallback;
 }
 
+function holdingAssetLabel(assetType) {
+  const value = String(assetType || "Other").trim() || "Other";
+  const lower = value.toLowerCase();
+  if (lower === "equity" || lower.includes("stock")) return "Stock";
+  if (lower === "etf") return "ETF";
+  if (lower.includes("crypto")) return "Crypto";
+  if (lower.includes("mutual")) return "Mutual Fund";
+  if (lower.includes("option")) return "Options";
+  return value;
+}
+
+function groupHoldingsByAssetType(holdings) {
+  const groups = new Map();
+  for (const holding of holdings) {
+    const label = holdingAssetLabel(holding.asset_type);
+    if (!groups.has(label)) groups.set(label, { label, value: 0, holdings: [] });
+    const group = groups.get(label);
+    group.value += Number(holding.value || 0);
+    group.holdings.push(holding);
+  }
+  const order = ["Stock", "ETF", "Mutual Fund", "Crypto", "Options", "Mixed", "Other"];
+  return [...groups.values()].sort((a, b) => {
+    const aIndex = order.includes(a.label) ? order.indexOf(a.label) : order.length;
+    const bIndex = order.includes(b.label) ? order.indexOf(b.label) : order.length;
+    return aIndex - bIndex || Number(b.value || 0) - Number(a.value || 0);
+  });
+}
+
+function renderHoldingRow(holding, index) {
+  const symbol = holdingText(holding.symbol, "INV");
+  const name = holdingNameText(holding.name, symbol || "Holding");
+  const account = holding.account_name || holding.institution || "";
+  const spark = renderSpark(holding);
+  const assetLabel = holdingAssetLabel(holding.asset_type);
+  const optionDetails = assetLabel === "Options"
+    ? [
+        holding.option_type,
+        holding.strike_price != null && Number.isFinite(Number(holding.strike_price)) ? `${fmt(holding.strike_price)} strike` : "",
+        holding.expiration_date,
+        holding.quantity != null && Number.isFinite(Number(holding.quantity)) ? `${Number(holding.quantity).toLocaleString()} contract${Math.abs(Number(holding.quantity)) === 1 ? "" : "s"}` : "",
+        holding.price != null && Number.isFinite(Number(holding.price)) ? `${fmt(holding.price)}/share` : "",
+      ].filter(Boolean).join(" &middot; ")
+    : "";
+  const subtitle = [
+    assetLabel,
+    optionDetails,
+    account,
+  ].filter(Boolean).map(escapeHtml).join(" &middot; ");
+  return `
+    <div class="invest-row holding-row ${spark ? "with-spark" : ""}">
+      <div class="invest-symbol">${escapeHtml(symbol.slice(0, 5).toUpperCase())}</div>
+      <div class="invest-main">
+        <div class="invest-name">${escapeHtml(name)}</div>
+        <div class="invest-sub">${subtitle}</div>
+      </div>
+      ${spark}
+      ${renderHoldingValue(holding)}
+    </div>`;
+}
+
+function renderGroupedHoldings(holdings) {
+  if (!holdings.length) return "";
+  const groups = groupHoldingsByAssetType(holdings);
+  return `
+    <div class="section-title">
+      <span>Holdings</span>
+      <span class="section-subtitle">${holdings.length} position${holdings.length === 1 ? "" : "s"}</span>
+    </div>
+    <div class="holding-groups">
+      ${groups.map((group, groupIndex) => `
+        <details class="holding-group" open>
+          <summary>
+            <span class="holding-group-main">
+              <span class="holding-group-title">${escapeHtml(group.label)}</span>
+              <span class="holding-group-count">${group.holdings.length} position${group.holdings.length === 1 ? "" : "s"}</span>
+            </span>
+            <span class="holding-group-total">${fmt(group.value)}</span>
+            <span class="category-chevron" aria-hidden="true"></span>
+          </summary>
+          <div class="holding-group-body">
+            ${group.holdings.map((holding, index) => renderHoldingRow(holding, groupIndex * 100 + index)).join("")}
+          </div>
+        </details>`).join("")}
+    </div>`;
+}
+
 function renderHoldings(holdings) {
   if (!holdings.length) return "";
   return `
@@ -1535,8 +2717,8 @@ function renderHoldings(holdings) {
             <div class="invest-name">${escapeHtml(name)}</div>
             <div class="invest-sub">${escapeHtml(holding.asset_type || "Other")} · ${escapeHtml(holding.account_name || holding.institution || "")}</div>
           </div>
-          ${renderSpark(holding.value, index)}
-          <div class="invest-amount">${fmt(holding.value)}</div>
+          ${renderSpark(holding)}
+          ${renderHoldingValue(holding)}
         </div>`;
       }).join("")}
     </div>`;
@@ -1552,7 +2734,7 @@ function renderInvestments(data) {
     renderBuyingPower(displayData.buying_power),
     renderInvestmentAccounts(displayData.accounts || []),
     renderAllocation(displayData.allocation || []),
-    renderHoldings(displayData.holdings || []),
+    renderGroupedHoldings(displayData.holdings || []),
     visibleErrors.length ? `<pre class="err">${JSON.stringify(visibleErrors, null, 2)}</pre>` : "",
   ].join("");
 }
@@ -1566,6 +2748,475 @@ async function refreshInvestments(force = false) {
   }
   investmentsData = payload;
   renderInvestments(payload);
+}
+
+function fmtSignedPercent(value) {
+  if (value == null || value === "") return "-";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+function fmtSignedNumber(value) {
+  if (value == null || value === "") return "-";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "-";
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}`;
+}
+
+function fmtMarketTimestamp(epochSeconds) {
+  if (!epochSeconds) return "";
+  return new Date(Number(epochSeconds) * 1000).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function marketValueLabel(item) {
+  if (item?.latest == null || item?.latest === "") return "-";
+  const value = Number(item?.latest);
+  if (!Number.isFinite(value)) return "-";
+  if (item?.group === "volatility" && ["VIX", "VXN"].includes(String(item?.symbol || "").toUpperCase())) return value.toFixed(2);
+  if (item?.group === "fx") {
+    const quote = String(item?.quote_currency || "").toUpperCase();
+    const digits = quote === "JPY" ? 2 : 4;
+    const rate = value.toLocaleString(undefined, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+    return quote ? `${rate} ${quote}` : rate;
+  }
+  return fmt(value);
+}
+
+function marketToneClass(tone) {
+  if (tone === "positive" || tone === "negative" || tone === "cautious") return tone;
+  return "neutral";
+}
+
+function marketSparkValues(item) {
+  const raw = item?.sparkline || item?.prices || [];
+  const points = raw
+    .map(point => ({
+      date: String(point?.date || ""),
+      close: Number(point?.close),
+    }))
+    .filter(point => Number.isFinite(point.close));
+  const intraday = points.filter(point => point.date.includes(" "));
+  if (intraday.length >= 2) {
+    const latestDate = intraday
+      .map(point => point.date.split(" ")[0])
+      .sort()
+      .at(-1);
+    const session = intraday.filter(point => point.date.startsWith(latestDate));
+    if (session.length >= 2) return session.map(point => point.close);
+  }
+  return points.map(point => point.close).slice(-2);
+}
+
+function marketSparkPath(item) {
+  const values = marketSparkValues(item);
+  if (values.length < 2) return "";
+  return pathFromValues(values, 300, 76, 8);
+}
+
+function marketSparkDirection(item) {
+  const values = marketSparkValues(item);
+  if (values.length < 2) return "flat";
+  return values[values.length - 1] < values[0] ? "down" : "up";
+}
+
+function renderMarketHero(data) {
+  const mood = data?.mood || {};
+  const score = Number(mood.score);
+  const hasScore = Number.isFinite(score);
+  const angle = hasScore ? Math.max(0, Math.min(100, score)) * 3.6 : 0;
+  const fetched = fmtMarketTimestamp(data?.fetched_at);
+  const strategy = (data?.strategy || []).slice(0, 3);
+  marketHero.innerHTML = `
+    <div class="market-hero-top">
+      <span class="market-kicker">Daily Market Pulse</span>
+      <span class="market-date">${escapeHtml(fetched || "Not refreshed")}</span>
+    </div>
+    <div class="market-mood">
+      <div class="market-score" style="--score-angle:${angle}deg">
+        <strong>${hasScore ? Math.round(score) : "--"}</strong>
+        <span>Score</span>
+      </div>
+      <div class="market-mood-text">
+        <h2>${escapeHtml(mood.label || "Market Pulse")}</h2>
+        <p>${escapeHtml(mood.summary || "Market analysis will appear after data loads.")}</p>
+      </div>
+    </div>
+    ${strategy.length ? `
+      <div class="market-strategy">
+        ${strategy.map(item => `
+          <div class="market-strategy-item ${marketToneClass(item.tone)}">
+            <div class="market-strategy-label">${escapeHtml(item.label)}</div>
+            <div class="market-strategy-value">${escapeHtml(item.value)}</div>
+          </div>`).join("")}
+      </div>` : ""}`;
+}
+
+function renderMarketCard(item) {
+  const change = Number(item?.change || 0);
+  const down = change < 0;
+  const tone = marketToneClass(item?.trend?.tone || item?.rsi_label?.tone);
+  const spark = marketSparkPath(item);
+  const sparkDirection = marketSparkDirection(item);
+  const rsi = Number(item?.rsi);
+  const rsiLabel = item?.rsi_label?.label || "";
+  const trend = item?.trend?.label || "";
+  return `
+    <article class="market-card ${down ? "down" : "up"} ${tone}">
+      <div class="market-card-top">
+        <div>
+          <div class="market-name">${escapeHtml(item.name || item.symbol || "Market")}</div>
+          <div class="market-sub">${escapeHtml([item.symbol, item.subtitle, item.date].filter(Boolean).join(" - "))}</div>
+        </div>
+        <span class="market-change">${fmtSignedPercent(item.change_percent)}</span>
+      </div>
+      <div class="market-price">${marketValueLabel(item)}</div>
+      ${spark ? `
+        <svg class="market-spark ${sparkDirection}" viewBox="0 0 300 76" preserveAspectRatio="none" aria-hidden="true">
+          <path d="${spark}"></path>
+        </svg>` : ""}
+      <div class="market-meta">
+        <span class="market-chip primary">${fmtSignedNumber(item.change)}</span>
+        ${Number.isFinite(rsi) ? `<span class="market-chip">RSI ${rsi.toFixed(1)} ${escapeHtml(rsiLabel)}</span>` : ""}
+        ${trend ? `<span class="market-chip">${escapeHtml(trend)}</span>` : ""}
+        ${item?.stale ? `<span class="market-chip">Stale cache</span>` : ""}
+        ${item?.unavailable ? `<span class="market-chip">Unavailable</span>` : ""}
+      </div>
+    </article>`;
+}
+
+function renderMarketRsiCard(item) {
+  const rsi = Number(item?.rsi);
+  const label = item?.rsi_label?.label || "Unavailable";
+  const tone = marketToneClass(item?.rsi_label?.tone);
+  return `
+    <article class="market-card ${tone}">
+      <div class="market-card-top">
+        <div>
+          <div class="market-name">${escapeHtml(item.name || item.symbol)} RSI(14)</div>
+          <div class="market-sub">Momentum signal</div>
+        </div>
+        <span class="market-change">${escapeHtml(label)}</span>
+      </div>
+      <div class="market-price">${Number.isFinite(rsi) ? rsi.toFixed(1) : "--"}</div>
+      <div class="market-meta">
+        <span class="market-chip primary">${escapeHtml(label)}</span>
+        <span class="market-chip">Below 30 oversold</span>
+        <span class="market-chip">Above 70 hot</span>
+      </div>
+    </article>`;
+}
+
+function marketSection(title, subtitle, items, renderer = renderMarketCard) {
+  if (!items.length) return "";
+  return `
+    <div class="market-section-title">
+      <span>${escapeHtml(title)}</span>
+      <span>${escapeHtml(subtitle)}</span>
+    </div>
+    <div class="market-grid">${items.map(renderer).join("")}</div>`;
+}
+
+function renderMarketPulse(data) {
+  marketPulseData = data;
+  renderMarketHero(data);
+  if (!data?.configured) {
+    marketOut.innerHTML = `
+      <div class="market-empty">
+        Add <code>TWELVE_DATA_API_KEY</code> to your <code>.env</code> file, then restart the server to enable Market Pulse.
+      </div>`;
+    return;
+  }
+  if (data?.warming_up && !(data.instruments || []).length) {
+    marketOut.innerHTML = `
+      <div class="market-empty">
+        Market Pulse is fetching fresh data. This can take a minute on the free API because requests are spaced out safely.
+      </div>`;
+    window.clearTimeout(window.marketPulseRetryTimer);
+    window.marketPulseRetryTimer = window.setTimeout(() => refreshMarketPulse(false), 20000);
+    return;
+  }
+
+  const instruments = data.instruments || [];
+  const indices = instruments.filter(item => item.group === "index");
+  const volatility = instruments.filter(item => item.group === "volatility");
+  const macro = instruments.filter(item => item.group === "macro");
+  const fx = instruments.filter(item => item.group === "fx");
+  const rsi = indices.filter(item => Number.isFinite(Number(item.rsi)));
+  const missingErrors = (data.errors || []).filter(error => !error.using_stale);
+  const staleErrors = (data.errors || []).filter(error => error.using_stale);
+  const missingCount = missingErrors.length;
+  const missingNote = missingCount && instruments.length
+    ? `<div class="market-empty">${missingCount} symbol${missingCount === 1 ? "" : "s"} unavailable on the free API right now.</div>`
+    : "";
+  const staleNote = staleErrors.length
+    ? `<div class="market-empty">${staleErrors.length} symbol${staleErrors.length === 1 ? " is" : "s are"} using stale cached data because the live API was rate-limited.</div>`
+    : "";
+  const warmingNote = data?.warming_up
+    ? `<div class="market-empty">Showing cached Market Pulse while a fresh refresh runs in the background.</div>`
+    : "";
+  const hardError = missingCount && !instruments.length
+    ? `<pre class="err">${JSON.stringify(missingErrors, null, 2)}</pre>`
+    : "";
+
+  marketOut.innerHTML = [
+    marketSection("Market", "Price trend", indices),
+    marketSection("Momentum", "RSI", rsi, renderMarketRsiCard),
+    marketSection("Volatility", "Risk gauge", volatility),
+    marketSection("Macro", "Useful proxies", macro),
+    marketSection("FX", "Exchange rates", fx),
+    warmingNote,
+    staleNote,
+    missingNote,
+    hardError,
+  ].join("");
+}
+
+async function refreshMarketPulse(force = false) {
+  marketHero.innerHTML = "";
+  marketOut.innerHTML = `<div class="market-empty">Loading market pulse...</div>`;
+  const path = force ? "/api/market-pulse?refresh=1" : "/api/market-pulse";
+  try {
+    const response = await fetch(path);
+    const payload = await response.json();
+    renderMarketPulse(payload);
+  } catch (error) {
+    marketHero.innerHTML = "";
+    marketOut.innerHTML = `
+      <div class="market-empty">
+        Market Pulse could not load. Restart the server and try again.
+      </div>
+      <pre class="err">${escapeHtml(String(error))}</pre>`;
+  }
+}
+
+function fmtMoney(n) {
+  return Number(n || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function markdownCell(value) {
+  return String(value ?? "")
+    .replace(/\|/g, "\\|")
+    .replace(/\r?\n/g, " ")
+    .trim();
+}
+
+function restoreExportButton(btn, label, cls) {
+  if (!btn) return;
+  btn.textContent = label;
+  if (cls) btn.classList.add(cls);
+  setTimeout(() => {
+    btn.textContent = "Export";
+    btn.classList.remove("copied", "failed");
+  }, 1800);
+}
+
+function buildTransactionsExport() {
+  if (!transactionsData.length) return null;
+  const { spending, excluded, adjustments, total, breakdown } = monthlySpendingData();
+  const now = new Date();
+  const monthName = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const lines = [];
+  lines.push(`# Transaction Summary`);
+  lines.push(``);
+  lines.push(`Generated: ${new Date().toISOString()}`);
+  lines.push(`Period: ${monthName}`);
+  lines.push(`Total counted spending: $${fmtMoney(total)}`);
+  lines.push(`Counted spending transactions: ${spending.length}`);
+  lines.push(`Excluded transfer/payment transactions: ${excluded.length}`);
+  if (adjustments.length) {
+    const adjusted = adjustments.reduce((sum, item) => sum + item.amount, 0);
+    lines.push(`Rent reimbursement adjustment: -$${fmtMoney(adjusted)}`);
+  }
+  lines.push(``);
+
+  if (breakdown.length) {
+    lines.push(`## Spending By Category`);
+    for (const item of breakdown) {
+      const pct = total ? (item.amount / total) * 100 : 0;
+      lines.push(`- ${item.category}: $${fmtMoney(item.amount)} (${pct.toFixed(1)}%, ${item.transactions.length} transactions)`);
+    }
+    lines.push(``);
+  }
+
+  if (adjustments.length) {
+    lines.push(`## Adjustments`);
+    for (const item of adjustments) {
+      const transfers = `${item.source_count} transfer${item.source_count === 1 ? "" : "s"}`;
+      lines.push(`- ${item.name}: -$${fmtMoney(item.amount)} applied to ${item.category} (${transfers})`);
+    }
+    lines.push(``);
+  }
+
+  lines.push(`## Counted Transactions`);
+  lines.push(`| Date | Merchant | Amount | Category | Detailed Category | Account | Institution |`);
+  lines.push(`|---|---|---:|---|---|---|---|`);
+  for (const tx of spending.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))) {
+    lines.push(`| ${markdownCell(tx.date)} | ${markdownCell(tx.name)} | $${fmtMoney(Math.abs(Number(tx.amount) || 0))} | ${markdownCell(spendingCategoryForTx(tx))} | ${markdownCell(displayCategory(tx.category))} | ${markdownCell(tx.account_name)} | ${markdownCell(tx.institution)} |`);
+  }
+  lines.push(``);
+
+  if (excluded.length) {
+    lines.push(`## Excluded Transfers / Payments`);
+    lines.push(`| Date | Name | Amount | Category | Account | Institution |`);
+    lines.push(`|---|---|---:|---|---|---|`);
+    for (const tx of excluded.slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")))) {
+      lines.push(`| ${markdownCell(tx.date)} | ${markdownCell(tx.name)} | $${fmtMoney(Math.abs(Number(tx.amount) || 0))} | ${markdownCell(displayCategory(tx.category))} | ${markdownCell(tx.account_name)} | ${markdownCell(tx.institution)} |`);
+    }
+    lines.push(``);
+  }
+
+  return lines.join("\n");
+}
+
+async function exportTransactions() {
+  if (!transactionsData.length) {
+    restoreExportButton(exportTransactionsBtn, "Nothing to export", "failed");
+    return;
+  }
+  const text = buildTransactionsExport();
+  if (!text) {
+    restoreExportButton(exportTransactionsBtn, "Nothing to export", "failed");
+    return;
+  }
+  try {
+    await copyText(text);
+    restoreExportButton(exportTransactionsBtn, "Copied", "copied");
+  } catch (err) {
+    console.error("Transaction export copy failed", err);
+    restoreExportButton(exportTransactionsBtn, "Copy failed", "failed");
+  }
+}
+
+function buildPortfolioExport() {
+  if (!investmentsData) return null;
+  const data = displayInvestmentData(investmentsData);
+  const totalInvested = Number(data.total_value || 0);
+  const buyingPower = data.buying_power || { total: 0, items: [] };
+  const totalCash = Number(buyingPower.total || 0);
+  const totalCombined = totalInvested + totalCash;
+  const generated = new Date().toISOString();
+
+  const lines = [];
+  lines.push(`# Portfolio Summary`);
+  lines.push(``);
+  lines.push(`Generated: ${generated}`);
+  lines.push(`Total invested (positions): $${fmtMoney(totalInvested)}`);
+  lines.push(`Total cash / buying power: $${fmtMoney(totalCash)}`);
+  lines.push(`Total portfolio value: $${fmtMoney(totalCombined)}`);
+  lines.push(``);
+
+  const allocation = data.allocation || [];
+  if (allocation.length) {
+    lines.push(`## Allocation (by asset type, positions only)`);
+    for (const item of allocation) {
+      const pct = Number(item.percent || 0).toFixed(1);
+      lines.push(`- ${item.asset_type}: $${fmtMoney(item.value)} (${pct}%)`);
+    }
+    lines.push(``);
+  }
+
+  const accounts = data.accounts || [];
+  if (accounts.length) {
+    lines.push(`## Invested Accounts (${accounts.length})`);
+    for (const acct of accounts) {
+      const subtype = acct.subtype || "investment";
+      const inst = acct.institution || "Unknown institution";
+      const name = acct.name || "Investment Account";
+      lines.push(`- ${name} — ${inst} (${subtype}): $${fmtMoney(acct.current)}`);
+    }
+    lines.push(``);
+  }
+
+  const holdings = data.holdings || [];
+  if (holdings.length) {
+    lines.push(`## Holdings (${holdings.length})`);
+    lines.push(`| Symbol | Name | Asset Type | Quantity | Price (USD) | Value (USD) | Account | Institution |`);
+    lines.push(`|---|---|---|---|---|---|---|---|`);
+    for (const h of holdings) {
+      const symbol = holdingText(h.symbol, "—");
+      const name = holdingNameText(h.name, symbol);
+      const assetType = h.asset_type || "Other";
+      const qty = h.quantity != null && Number.isFinite(Number(h.quantity))
+        ? Number(h.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })
+        : "—";
+      const price = h.price != null && Number.isFinite(Number(h.price))
+        ? `$${fmtMoney(h.price)}`
+        : "—";
+      const value = `$${fmtMoney(h.value)}`;
+      const account = h.account_name || "—";
+      const inst = h.institution || "—";
+      lines.push(`| ${symbol} | ${name} | ${assetType} | ${qty} | ${price} | ${value} | ${account} | ${inst} |`);
+    }
+    lines.push(``);
+  }
+
+  const cashItems = (buyingPower.items || []).filter(item => Number(item.value || 0) > 0);
+  if (cashItems.length) {
+    lines.push(`## Cash & Buying Power (${cashItems.length} sources)`);
+    for (const item of cashItems) {
+      const symbol = holdingText(item.symbol, "CASH");
+      const name = holdingNameText(item.name, "Cash");
+      const category = item.category === "deposit" ? "Deposit cash" : "Investment cash";
+      const inst = item.institution || "—";
+      const account = item.account_name ? ` / ${item.account_name}` : "";
+      lines.push(`- ${inst}${account}: $${fmtMoney(item.value)} — ${name} (${symbol}, ${category})`);
+    }
+    lines.push(``);
+  }
+
+  return lines.join("\n");
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+async function exportPortfolio() {
+  const btn = document.getElementById("export-portfolio");
+  if (!investmentsData) {
+    restoreExportButton(btn, "Nothing to export", "failed");
+    return;
+  }
+  const text = buildPortfolioExport();
+  if (!text) {
+    restoreExportButton(btn, "Nothing to export", "failed");
+    return;
+  }
+  try {
+    await copyText(text);
+    restoreExportButton(btn, "Copied", "copied");
+  } catch (err) {
+    console.error("Export copy failed", err);
+    restoreExportButton(btn, "Copy failed", "failed");
+  }
 }
 
 function renderNetWorthChart(history) {
@@ -1907,10 +3558,12 @@ async function resetAll() {
   await fetch("/api/reset", { method: "POST" });
   transactionsData = [];
   investmentsData = null;
+  marketPulseData = null;
   txSearch.value = "";
   await refresh();
   if (currentView === "transactions") await refreshTransactions();
   if (currentView === "investments") await refreshInvestments();
+  if (currentView === "market") await refreshMarketPulse();
 }
 
 out.addEventListener("click", (event) => {
@@ -1943,6 +3596,8 @@ document.getElementById("refresh").onclick = () => {
     refreshTransactions(true);
   } else if (currentView === "investments") {
     refreshInvestments(true);
+  } else if (currentView === "market") {
+    refreshMarketPulse(true);
   } else {
     refresh(true);
   }
@@ -1956,6 +3611,9 @@ document.getElementById("reset").onclick = resetAll;
 overviewTab.onclick = () => showView("overview");
 investmentsTab.onclick = () => showView("investments");
 transactionsTab.onclick = () => showView("transactions");
+marketTab.onclick = () => showView("market");
+exportTransactionsBtn.onclick = exportTransactions;
+document.getElementById("export-portfolio").onclick = exportPortfolio;
 txSearch.addEventListener("input", renderTransactions);
 
 refresh();

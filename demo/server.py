@@ -1,11 +1,15 @@
 import json
 import os
 import hashlib
+import re
 import threading
 import time
 import uuid
 from datetime import date
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
@@ -23,6 +27,12 @@ from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
+
+from market_pulse import (
+    get_market_pulse_payload,
+    reset_market_pulse_cache,
+    start_market_pulse_refresher,
+)
 
 try:
     from snaptrade_client import SnapTrade
@@ -76,13 +86,22 @@ NET_WORTH_HISTORY_FILE = DEMO_DIR / "net_worth_history.json"
 TRANSACTIONS_CACHE_FILE = DEMO_DIR / "transactions_cache.json"
 INVESTMENTS_CACHE_FILE = DEMO_DIR / "investments_cache.json"
 INVESTMENT_HISTORY_FILE = DEMO_DIR / "investment_history.json"
+MARKET_DATA_CACHE_FILE = DEMO_DIR / "market_data_cache.json"
+CONFIG_FILE = DEMO_DIR / "config.json"
 BALANCE_REFRESH_SECONDS = int(os.getenv("BALANCE_REFRESH_SECONDS", "3600"))
 TRANSACTION_LIMIT = int(os.getenv("TRANSACTION_LIMIT", "500"))
+TWELVE_DATA_API_KEY = os.getenv("TWELVE_DATA_API_KEY", "").strip()
+DEFAULT_MARKET_DATA_CACHE_SECONDS = int(os.getenv("MARKET_DATA_CACHE_SECONDS", "7200"))
+DEFAULT_MARKET_DATA_OUTPUT_SIZE = int(os.getenv("MARKET_DATA_OUTPUT_SIZE", "78"))
+DEFAULT_MARKET_DATA_INTERVAL = os.getenv("MARKET_DATA_INTERVAL", "5min")
+DEFAULT_MARKET_DATA_REQUEST_DELAY_SECONDS = float(os.getenv("MARKET_DATA_REQUEST_DELAY_SECONDS", "8.0"))
+DEFAULT_MARKET_DATA_TIMEOUT_SECONDS = float(os.getenv("MARKET_DATA_TIMEOUT_SECONDS", "12"))
 BALANCE_CACHE_LOCK = threading.Lock()
 TRANSACTIONS_CACHE_LOCK = threading.Lock()
 INVESTMENTS_CACHE_LOCK = threading.Lock()
 NET_WORTH_HISTORY_LOCK = threading.Lock()
 INVESTMENT_HISTORY_LOCK = threading.Lock()
+MARKET_DATA_CACHE_LOCK = threading.Lock()
 BALANCE_CACHE = None
 TRANSACTIONS_CACHE = None
 INVESTMENTS_CACHE = None
@@ -110,6 +129,44 @@ def _json_or_empty(raw):
         return json.loads(raw)
     except (TypeError, json.JSONDecodeError):
         return {}
+
+
+def load_app_config():
+    defaults = {
+        "market_data_cache_seconds": DEFAULT_MARKET_DATA_CACHE_SECONDS,
+        "market_data_output_size": DEFAULT_MARKET_DATA_OUTPUT_SIZE,
+        "market_data_interval": DEFAULT_MARKET_DATA_INTERVAL,
+        "market_data_request_delay_seconds": DEFAULT_MARKET_DATA_REQUEST_DELAY_SECONDS,
+        "market_data_timeout_seconds": DEFAULT_MARKET_DATA_TIMEOUT_SECONDS,
+    }
+    data = _read_json(CONFIG_FILE, {})
+    if not isinstance(data, dict):
+        data = {}
+
+    def int_setting(key, minimum):
+        try:
+            return max(minimum, int(data.get(key, defaults[key])))
+        except (TypeError, ValueError):
+            return defaults[key]
+
+    def float_setting(key, minimum):
+        try:
+            return max(minimum, float(data.get(key, defaults[key])))
+        except (TypeError, ValueError):
+            return defaults[key]
+
+    def interval_setting():
+        allowed = {"1min", "5min", "15min", "30min", "45min", "1h", "2h", "4h", "1day"}
+        value = str(data.get("market_data_interval", defaults["market_data_interval"])).strip()
+        return value if value in allowed else defaults["market_data_interval"]
+
+    return {
+        "market_data_cache_seconds": int_setting("market_data_cache_seconds", 300),
+        "market_data_output_size": int_setting("market_data_output_size", 2),
+        "market_data_interval": interval_setting(),
+        "market_data_request_delay_seconds": float_setting("market_data_request_delay_seconds", 0),
+        "market_data_timeout_seconds": float_setting("market_data_timeout_seconds", 1),
+    }
 
 
 def load_tokens():
@@ -225,6 +282,28 @@ def record_investment_history(payload):
         history = sorted(history, key=lambda p: p["date"])
         save_investment_history(history)
     return history
+
+
+def empty_market_data_cache():
+    return {"provider": "twelvedata", "symbols": {}}
+
+
+def load_market_data_cache():
+    with MARKET_DATA_CACHE_LOCK:
+        data = _read_json(MARKET_DATA_CACHE_FILE, empty_market_data_cache())
+        if not isinstance(data, dict):
+            return empty_market_data_cache()
+        symbols = data.get("symbols")
+        if not isinstance(symbols, dict):
+            data["symbols"] = {}
+        data.setdefault("provider", "twelvedata")
+        return data
+
+
+def save_market_data_cache(data):
+    with MARKET_DATA_CACHE_LOCK:
+        _write_json(MARKET_DATA_CACHE_FILE, data)
+    return data
 
 
 def load_balance_cache():
@@ -770,6 +849,21 @@ def is_stock_plan_account(account):
     )
 
 
+def reconciled_stock_plan_position(value, price, fallback_quantity):
+    try:
+        value = float(value or 0)
+        price = float(price or 0)
+    except (TypeError, ValueError):
+        return fallback_quantity, None
+    if value > 0 and price > 0:
+        quantity = value / price
+        rounded_quantity = round(quantity)
+        if rounded_quantity > 0:
+            return float(rounded_quantity), value / rounded_quantity
+        return quantity, price
+    return fallback_quantity, price if price > 0 else None
+
+
 def is_buying_power_holding(symbol, name, asset_type=None):
     ticker = str(symbol or "").upper()
     text = " ".join(str(part or "").lower() for part in (symbol, name, asset_type))
@@ -807,6 +901,8 @@ def classify_asset_type(security_type, ticker, name):
     text = " ".join(str(part or "").lower() for part in (security_type, ticker, name))
     if "cash" in text or ticker in ("USD", "CUR:USD"):
         return "Cash"
+    if "option" in text:
+        return "Options"
     if "crypto" in text or "bitcoin" in text or "ethereum" in text:
         return "Crypto"
     if "mutual" in text or "money market" in text or "open ended fund" in text or "oef" in text:
@@ -991,6 +1087,176 @@ def build_buying_power(balance_payload, raw_accounts, invested_accounts, investm
     }
 
 
+def market_data_cache_key(symbol):
+    key = str(symbol or "").strip().upper().replace("$", "")
+    if not key or key in {"CASH", "USD"} or key.startswith("CUR:"):
+        return ""
+    if not re.match(r"^[A-Z0-9][A-Z0-9.\-]{0,14}$", key):
+        return ""
+    return key
+
+
+def market_data_symbol_for_provider(symbol, asset_type=None):
+    key = market_data_cache_key(symbol)
+    if not key:
+        return ""
+    if str(asset_type or "").lower() == "crypto":
+        return f"{key}/USD"
+    return key
+
+
+def market_data_prices(entry, output_size=None):
+    output_size = int(output_size or DEFAULT_MARKET_DATA_OUTPUT_SIZE)
+    prices = []
+    for point in (entry or {}).get("prices") or []:
+        if not isinstance(point, dict):
+            continue
+        close = point.get("close")
+        stamp = point.get("date")
+        try:
+            close = float(close)
+        except (TypeError, ValueError):
+            continue
+        if not stamp:
+            continue
+        prices.append({"date": str(stamp), "close": close})
+    prices.sort(key=lambda point: point["date"])
+    return prices[-output_size:]
+
+
+def fetch_twelve_data_prices(symbol, asset_type=None, config=None):
+    config = config or load_app_config()
+    output_size = config["market_data_output_size"]
+    interval = config["market_data_interval"]
+    provider_symbol = market_data_symbol_for_provider(symbol, asset_type)
+    if not TWELVE_DATA_API_KEY or not provider_symbol:
+        return None
+    params = {
+        "symbol": provider_symbol,
+        "interval": interval,
+        "outputsize": str(output_size),
+        "order": "asc",
+        "apikey": TWELVE_DATA_API_KEY,
+    }
+    url = "https://api.twelvedata.com/time_series?" + urlencode(params)
+    req = Request(url, headers={"User-Agent": "Forge-Ledger/1.0"})
+    try:
+        with urlopen(req, timeout=config["market_data_timeout_seconds"]) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Twelve Data HTTP {e.code}: {body[:180]}") from e
+    except (URLError, TimeoutError, json.JSONDecodeError) as e:
+        raise RuntimeError(f"Twelve Data request failed: {e}") from e
+
+    if payload.get("status") == "error":
+        raise RuntimeError(payload.get("message") or payload.get("code") or "Twelve Data error")
+    values = payload.get("values")
+    if not isinstance(values, list):
+        raise RuntimeError("Twelve Data response did not include time-series values")
+
+    prices = []
+    for point in values:
+        if not isinstance(point, dict):
+            continue
+        stamp = str(point.get("datetime") or "").strip()
+        try:
+            close = float(point.get("close"))
+        except (TypeError, ValueError):
+            continue
+        if stamp:
+            prices.append({"date": stamp, "close": close})
+    prices.sort(key=lambda point: point["date"])
+    if len(prices) < 2:
+        raise RuntimeError("Twelve Data returned fewer than two close prices")
+    return {
+        "symbol": market_data_cache_key(symbol),
+        "provider_symbol": provider_symbol,
+        "interval": interval,
+        "prices": prices[-output_size:],
+        "fetched_at": int(time.time()),
+    }
+
+
+def holding_market_data_key(holding):
+    if str(holding.get("asset_type") or "").lower().startswith("option"):
+        return ""
+    symbol = market_data_cache_key(holding.get("symbol"))
+    if not symbol:
+        return ""
+    if is_buying_power_holding(symbol, holding.get("name"), holding.get("asset_type")):
+        return ""
+    return symbol
+
+
+def enrich_holdings_with_market_data(holdings, fetch_stale=False):
+    config = load_app_config()
+    output_size = config["market_data_output_size"]
+    interval = config["market_data_interval"]
+    cache = load_market_data_cache()
+    symbols = cache.setdefault("symbols", {})
+    now = int(time.time())
+    needed = {}
+    for holding in holdings:
+        key = holding_market_data_key(holding)
+        if key:
+            needed.setdefault(key, holding)
+
+    last_fetch_at = 0.0
+    dirty = False
+    for key, sample in needed.items():
+        entry = symbols.get(key) if isinstance(symbols.get(key), dict) else {}
+        interval_matches = entry.get("interval") == interval if isinstance(entry, dict) else False
+        prices = market_data_prices(entry, output_size) if interval_matches else []
+        fetched_at = int(entry.get("fetched_at") or 0) if isinstance(entry, dict) else 0
+        stale = not interval_matches or not fetched_at or (now - fetched_at) > config["market_data_cache_seconds"]
+        if not fetch_stale or not TWELVE_DATA_API_KEY or not stale:
+            continue
+
+        wait = config["market_data_request_delay_seconds"] - (time.time() - last_fetch_at)
+        if last_fetch_at and wait > 0:
+            time.sleep(wait)
+        try:
+            fresh = fetch_twelve_data_prices(key, sample.get("asset_type"), config)
+            if fresh:
+                symbols[key] = fresh
+                dirty = True
+                last_fetch_at = time.time()
+        except Exception as e:
+            symbols[key] = {
+                "symbol": key,
+                "provider_symbol": market_data_symbol_for_provider(key, sample.get("asset_type")),
+                "interval": interval,
+                "prices": prices,
+                "fetched_at": now,
+                "error": str(e),
+            }
+            dirty = True
+            last_fetch_at = time.time()
+            print(f"[MarketData] {key} failed: {e}", flush=True)
+
+    if dirty:
+        save_market_data_cache(cache)
+
+    enriched = []
+    for holding in holdings:
+        key = holding_market_data_key(holding)
+        entry = symbols.get(key) if key and isinstance(symbols.get(key), dict) else {}
+        interval_matches = entry.get("interval") == interval if entry else False
+        prices = market_data_prices(entry, output_size) if interval_matches else []
+        if len(prices) >= 2:
+            enriched.append({**holding, "sparkline": prices})
+        else:
+            clean = dict(holding)
+            clean.pop("sparkline", None)
+            clean.pop("price_history", None)
+            clean.pop("priceHistory", None)
+            clean.pop("history", None)
+            clean.pop("prices", None)
+            enriched.append(clean)
+    return enriched
+
+
 def normalized_investment_payload(payload):
     enriched = _json_clone(payload)
     balance_payload = get_balance_cache() or empty_balance_payload()
@@ -1033,11 +1299,23 @@ def normalized_investment_payload(payload):
             if current_value > 0:
                 if key in reconciled_stock_plan_accounts:
                     continue
-                holding = {**holding, "value": current_value}
+                holding = {
+                    **holding,
+                    "value": current_value,
+                }
+                quantity, price = reconciled_stock_plan_position(
+                    current_value,
+                    holding.get("price"),
+                    quantity,
+                )
+                holding["quantity"] = quantity
+                if price:
+                    holding["price"] = price
                 reconciled_stock_plan_accounts.add(key)
 
         holdings.append(holding)
 
+    holdings = enrich_holdings_with_market_data(holdings, fetch_stale=False)
     total_value = sum(float(item.get("value") or 0) for item in holdings)
     allocation_totals = {}
     for holding in holdings:
@@ -1098,6 +1376,17 @@ def _first_text(*values):
     return ""
 
 
+def _number_value(value, default=None):
+    if isinstance(value, dict):
+        value = value.get("amount")
+    try:
+        if value is None or value == "":
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def snaptrade_security_fields(position):
     raw_symbol = position.get("symbol")
     security = position.get("security") if isinstance(position.get("security"), dict) else {}
@@ -1136,19 +1425,231 @@ def snaptrade_security_fields(position):
 
 def holding_value_from_snaptrade(position):
     for key in ("market_value", "value", "institution_value"):
-        value = position.get(key)
-        if isinstance(value, dict):
-            value = value.get("amount")
+        value = _number_value(position.get(key))
         if value is not None:
-            return float(value or 0)
+            return value
 
-    price = position.get("price") or position.get("average_purchase_price")
-    quantity = position.get("units") or position.get("quantity")
-    if isinstance(price, dict):
-        price = price.get("amount")
+    price = _number_value(position.get("price") or position.get("average_purchase_price"))
+    quantity = _number_value(position.get("units") or position.get("quantity"))
     if quantity is not None and price is not None:
-        return float(quantity or 0) * float(price or 0)
+        return quantity * price
     return 0.0
+
+
+def _snaptrade_api_get(path, params):
+    url = "https://api.snaptrade.com/api/v1" + path
+    if params:
+        url += "?" + urlencode(params)
+    req = Request(
+        url,
+        headers={
+            "User-Agent": "Forge-Ledger/1.0",
+            "clientId": SNAPTRADE_CLIENT_ID or "",
+            "consumerKey": SNAPTRADE_CONSUMER_KEY or "",
+        },
+    )
+    try:
+        with urlopen(req, timeout=20) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"SnapTrade HTTP {e.code}: {body[:180]}") from e
+    except (URLError, TimeoutError, json.JSONDecodeError) as e:
+        raise RuntimeError(f"SnapTrade request failed: {e}") from e
+
+
+def _option_positions_from_payload(data):
+    data = _dictish(data)
+    if isinstance(data, list):
+        return data
+    if not isinstance(data, dict):
+        return []
+    for key in ("option_positions", "optionPositions", "positions", "holdings", "data", "options"):
+        value = data.get(key)
+        if isinstance(value, list):
+            return value
+        if isinstance(value, dict):
+            nested = _option_positions_from_payload(value)
+            if nested:
+                return nested
+    return []
+
+
+def _call_snaptrade_option_method(account_id, user):
+    options_api = getattr(snaptrade, "options", None)
+    if not options_api or not account_id:
+        return []
+
+    attempts = [
+        ("list_option_holdings", {"account_id": account_id}),
+        ("list_option_holdings", {"accountId": account_id}),
+        ("listOptionHoldings", {"account_id": account_id}),
+        ("listOptionHoldings", {"accountId": account_id}),
+    ]
+    for method_name, extra in attempts:
+        method = getattr(options_api, method_name, None)
+        if not method:
+            continue
+        try:
+            resp = method(
+                user_id=user["user_id"],
+                user_secret=user["user_secret"],
+                **extra,
+            )
+            return _option_positions_from_payload(_body(resp))
+        except Exception:
+            continue
+    return []
+
+
+def _snaptrade_option_positions_from_account(account, user):
+    account_id = account.get("id") or account.get("account_id") or account.get("number")
+    if not account_id:
+        return account.get("option_positions") or account.get("options") or []
+
+    positions = _call_snaptrade_option_method(account_id, user)
+    if positions:
+        return positions
+
+    if SNAPTRADE_CLIENT_ID and SNAPTRADE_CONSUMER_KEY:
+        try:
+            data = _snaptrade_api_get(
+                f"/accounts/{account_id}/options",
+                {"userId": user["user_id"], "userSecret": user["user_secret"]},
+            )
+            positions = _option_positions_from_payload(data)
+            if positions:
+                return positions
+        except Exception as e:
+            print(f"[SnapTrade] option positions failed for {account_id}: {e}", flush=True)
+
+    for method_name in ("get_user_holdings", "get_user_account_holdings"):
+        method = getattr(snaptrade.account_information, method_name, None)
+        if not method:
+            continue
+        try:
+            resp = method(
+                user_id=user["user_id"],
+                user_secret=user["user_secret"],
+                account_id=account_id,
+            )
+            positions = _option_positions_from_payload(_body(resp))
+            if positions:
+                return positions
+        except Exception:
+            continue
+
+    return account.get("option_positions") or account.get("options") or []
+
+
+def snaptrade_option_symbol_fields(position):
+    symbol_obj = position.get("symbol") if isinstance(position.get("symbol"), dict) else {}
+    option_symbol = (
+        position.get("option_symbol")
+        or position.get("optionSymbol")
+        or symbol_obj.get("option_symbol")
+        or symbol_obj.get("optionSymbol")
+        or {}
+    )
+    if not isinstance(option_symbol, dict):
+        option_symbol = {}
+
+    underlying = (
+        option_symbol.get("underlying_symbol")
+        or option_symbol.get("underlyingSymbol")
+        or position.get("underlying_symbol")
+        or position.get("underlyingSymbol")
+        or {}
+    )
+    if not isinstance(underlying, dict):
+        underlying = {"symbol": underlying}
+
+    ticker = _first_text(
+        position.get("ticker"),
+        option_symbol.get("ticker"),
+        option_symbol.get("raw_symbol"),
+        symbol_obj.get("raw_symbol"),
+        symbol_obj.get("symbol"),
+    )
+    underlying_symbol = _first_text(
+        underlying.get("symbol"),
+        underlying.get("raw_symbol"),
+        option_symbol.get("underlying_ticker"),
+        option_symbol.get("underlyingTicker"),
+    )
+    option_type = _first_text(
+        option_symbol.get("option_type"),
+        option_symbol.get("optionType"),
+        position.get("option_type"),
+        position.get("optionType"),
+    ).upper()
+    strike = _number_value(
+        option_symbol.get("strike_price")
+        or option_symbol.get("strikePrice")
+        or position.get("strike_price")
+        or position.get("strikePrice")
+    )
+    expiration = _first_text(
+        option_symbol.get("expiration_date"),
+        option_symbol.get("expirationDate"),
+        position.get("expiration_date"),
+        position.get("expirationDate"),
+    )
+
+    strike_text = f" ${strike:g}" if strike is not None else ""
+    type_text = option_type.title() if option_type else "Option"
+    underlying_text = underlying_symbol or ticker or "Option"
+    name = _first_text(
+        position.get("description"),
+        symbol_obj.get("description"),
+        f"{underlying_text} {type_text}{strike_text}{f' exp {expiration}' if expiration else ''}",
+    )
+    fallback_symbol_parts = [underlying_text, expiration, option_type, f"{strike:g}" if strike is not None else ""]
+    fallback_symbol = " ".join(part for part in fallback_symbol_parts if part).strip()
+    return ticker or fallback_symbol or underlying_text, name, option_type, strike, expiration
+
+
+def option_contract_multiplier(position):
+    symbol_obj = position.get("symbol") if isinstance(position.get("symbol"), dict) else {}
+    option_symbol = (
+        position.get("option_symbol")
+        or position.get("optionSymbol")
+        or symbol_obj.get("option_symbol")
+        or symbol_obj.get("optionSymbol")
+        or {}
+    )
+    if not isinstance(option_symbol, dict):
+        option_symbol = {}
+    for value in (
+        position.get("contract_size"),
+        position.get("contractSize"),
+        position.get("shares_per_contract"),
+        position.get("sharesPerContract"),
+        position.get("multiplier"),
+        option_symbol.get("contract_size"),
+        option_symbol.get("contractSize"),
+        option_symbol.get("shares_per_contract"),
+        option_symbol.get("sharesPerContract"),
+        option_symbol.get("multiplier"),
+    ):
+        number = _number_value(value)
+        if number:
+            return number
+    if option_symbol.get("is_mini_option") or option_symbol.get("isMiniOption"):
+        return 10.0
+    return 100.0
+
+
+def holding_value_from_snaptrade_option(position):
+    for key in ("market_value", "value", "institution_value"):
+        value = _number_value(position.get(key))
+        if value is not None:
+            return value
+    price = _number_value(position.get("price") or position.get("last_price") or position.get("lastPrice"))
+    quantity = _number_value(position.get("units") or position.get("quantity"))
+    if price is None or quantity is None:
+        return 0.0
+    return price * quantity * option_contract_multiplier(position)
 
 
 def _pull_plaid_holdings(
@@ -1219,6 +1720,13 @@ def _pull_plaid_holdings(
                     if holding_account_key in reconciled_stock_plan_accounts:
                         continue
                     value = current_value
+                    quantity, price = reconciled_stock_plan_position(
+                        current_value,
+                        holding.get("institution_price"),
+                        quantity,
+                    )
+                    if price:
+                        holding["institution_price"] = price
                     reconciled_stock_plan_accounts.add(holding_account_key)
             asset_type = classify_asset_type(security.get("type"), ticker, name)
             if is_buying_power_holding(ticker, name, asset_type):
@@ -1302,7 +1810,8 @@ def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys, b
         if snaptrade_account_key(account, inst) in hidden_keys:
             continue
         positions = _dictish(_snaptrade_positions_from_account(account, user)) or []
-        if not positions:
+        option_positions = _dictish(_snaptrade_option_positions_from_account(account, user)) or []
+        if not positions and not option_positions:
             balance_obj = account.get("balance") or {}
             total = balance_obj.get("total") if isinstance(balance_obj, dict) else None
             value = total.get("amount") if isinstance(total, dict) else total
@@ -1355,6 +1864,30 @@ def _pull_snaptrade_holdings(holdings, allocation_totals, errors, hidden_keys, b
                 }
             )
 
+        for position in option_positions:
+            symbol, name, option_type, strike, expiration = snaptrade_option_symbol_fields(position)
+            value = holding_value_from_snaptrade_option(position)
+            quantity = _number_value(position.get("units") or position.get("quantity"))
+            price = _number_value(position.get("price") or position.get("last_price") or position.get("lastPrice"))
+            add_allocation(allocation_totals, "Options", value)
+            holdings.append(
+                {
+                    "symbol": symbol or name[:5].upper(),
+                    "name": name,
+                    "value": value,
+                    "quantity": quantity,
+                    "price": price,
+                    "asset_type": "Options",
+                    "institution": inst,
+                    "account_name": account.get("name") or inst,
+                    "source": "snaptrade",
+                    "option_type": option_type,
+                    "strike_price": strike,
+                    "expiration_date": expiration,
+                    "contract_multiplier": option_contract_multiplier(position),
+                }
+            )
+
 
 def collect_investments():
     balance_payload = get_balance_cache() or empty_balance_payload()
@@ -1402,6 +1935,7 @@ def collect_investments():
                 }
             )
 
+    holdings = enrich_holdings_with_market_data(holdings, fetch_stale=True)
     total_value = sum(float(item.get("value") or 0) for item in holdings)
     allocation = [
         {
@@ -1747,6 +2281,13 @@ def investments():
     return jsonify(with_investment_history(cached))
 
 
+@app.route("/api/market-pulse", methods=["GET"])
+def market_pulse():
+    force_refresh = request.args.get("refresh", "").lower() in ("1", "true", "yes")
+    payload, status = get_market_pulse_payload(force_refresh=force_refresh)
+    return jsonify(payload), status
+
+
 @app.route("/api/accounts/hide", methods=["POST"])
 def hide_account():
     data = request.get_json(silent=True) or {}
@@ -1790,6 +2331,8 @@ def reset():
     save_transactions_cache(empty_transactions_payload())
     save_investments_cache(empty_investments_payload())
     save_balance_cache(empty_balance_payload())
+    save_market_data_cache(empty_market_data_cache())
+    reset_market_pulse_cache()
     return jsonify({"ok": True})
 
 
@@ -1800,6 +2343,7 @@ def handle_plaid_error(e):
 
 if __name__ == "__main__":
     start_balance_refresher()
+    start_market_pulse_refresher()
     app.run(
         host="0.0.0.0",
         port=int(os.getenv("PORT", 8000)),

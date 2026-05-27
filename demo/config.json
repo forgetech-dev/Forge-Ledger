@@ -1,0 +1,83 @@
+{
+  "market_data_cache_seconds": 7200,
+  "market_data_output_size": 78,
+  "market_data_interval": "5min",
+  "market_data_request_delay_seconds": 10.0,
+  "market_data_timeout_seconds": 12,
+  "market_pulse_cache_seconds": 7200,
+  "market_pulse_output_size": 45,
+  "market_pulse_interval": "1day",
+  "market_pulse_sparkline_output_size": 100,
+  "market_pulse_sparkline_interval": "5min",
+  "market_pulse_intraday_symbols": [
+    "SPY",
+    "QQQ"
+  ],
+  "market_pulse_request_delay_seconds": 15.0,
+  "market_pulse_timeout_seconds": 12,
+  "market_pulse_startup_delay_seconds": 180,
+  "market_pulse_symbols": [
+    {
+      "key": "sp500",
+      "symbol": "SPY",
+      "name": "S&P 500",
+      "subtitle": "SPY proxy",
+      "group": "index"
+    },
+    {
+      "key": "nasdaq100",
+      "symbol": "QQQ",
+      "name": "Nasdaq 100",
+      "subtitle": "QQQ proxy",
+      "group": "index"
+    },
+    {
+      "key": "vix",
+      "symbol": "VIX",
+      "name": "VIX",
+      "subtitle": "Cboe VIX Index",
+      "group": "volatility",
+      "source": "cboe_history"
+    },
+    {
+      "key": "vxn",
+      "symbol": "VXN",
+      "name": "VXN",
+      "subtitle": "Cboe Nasdaq-100 Volatility Index",
+      "group": "volatility",
+      "source": "cboe_history"
+    },
+    {
+      "key": "gold",
+      "symbol": "GLD",
+      "name": "Gold",
+      "subtitle": "GLD proxy",
+      "group": "macro"
+    },
+    {
+      "key": "treasury",
+      "symbol": "IEF",
+      "name": "Treasury Bonds",
+      "subtitle": "7-10Y Treasury ETF proxy",
+      "group": "macro"
+    },
+    {
+      "key": "usd_cny",
+      "symbol": "USD/CNY",
+      "name": "USD to CNY",
+      "subtitle": "Exchange rate",
+      "group": "fx",
+      "source": "frankfurter_fx",
+      "quote_currency": "CNY"
+    },
+    {
+      "key": "usd_jpy",
+      "symbol": "USD/JPY",
+      "name": "USD to JPY",
+      "subtitle": "Exchange rate",
+      "group": "fx",
+      "source": "frankfurter_fx",
+      "quote_currency": "JPY"
+    }
+  ]
+}

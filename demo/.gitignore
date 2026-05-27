@@ -6,5 +6,7 @@ net_worth_history.json
 transactions_cache.json
 investments_cache.json
 investment_history.json
+market_data_cache.json
+market_pulse_cache.json
 __pycache__/
 *.pyc
